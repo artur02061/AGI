@@ -13,10 +13,10 @@
 - ✅ cosine_similarity с numpy ускорением
 """
 
-import logging
 import threading
 
-logger = logging.getLogger("kristina.bridge")
+from utils.logging import get_logger
+logger = get_logger("bridge")
 
 RUST_AVAILABLE = False
 
@@ -132,8 +132,10 @@ class MemoryAdapter:
                     task = asyncio.create_task(
                         self.knowledge_graph.extract_and_add(user_input, response, importance)
                     )
-                    # Отслеживаем task чтобы избежать warnings в Python 3.12+
-                    task.add_done_callback(lambda t: t.exception() if not t.cancelled() and t.exception() else None)
+                    def _on_kg_done(t):
+                        if not t.cancelled() and t.exception():
+                            logger.warning(f"Knowledge graph extraction failed: {t.exception()}")
+                    task.add_done_callback(_on_kg_done)
                 except RuntimeError:
                     # No running loop — use sync fallback
                     for s, p, o in self.knowledge_graph._regex_extract(user_input):

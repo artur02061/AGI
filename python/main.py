@@ -271,8 +271,9 @@ async def process_input(user_input: str, components: dict) -> str:
 
     sa = components.get("self_awareness")
     if sa:
-        user_happy = any(w in text.lower() for w in ["спасибо", "круто", "отлично", "молодец"])
-        user_angry = any(w in text.lower() for w in ["ошибка", "не работает", "бред", "опять"])
+        input_lower = text.lower()
+        user_happy = any(w in input_lower for w in ["спасибо", "круто", "отлично", "молодец"])
+        user_angry = any(w in input_lower for w in ["ошибка", "не работает", "бред", "опять"])
         sa.update(
             valence=vad.state.valence if vad else 0.0,
             had_errors=had_errors,
@@ -302,7 +303,7 @@ async def main():
     try:
         while not shutdown.should_exit:
             try:
-                user_input = input("Ты: ").strip()
+                user_input = (await asyncio.to_thread(input, "Ты: ")).strip()
                 if not user_input:
                     continue
 

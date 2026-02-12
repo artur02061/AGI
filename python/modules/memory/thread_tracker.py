@@ -198,11 +198,3 @@ class ThreadMemory:
                 'timestamp': now
             })
     
-    def _close_current_thread(self):
-        """
-        DEPRECATED: Используйте _end_thread() или _end_thread_unsafe()
-        
-        Оставлен для обратной совместимости
-        """
-        logger.warning("⚠️ _close_current_thread() deprecated, используйте _end_thread()")
-        self._end_thread()

@@ -23,7 +23,7 @@ Inner Narrative (внутренний монолог):
 
 import time
 from collections import deque
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 from dataclasses import dataclass, field
 
 from utils.logging import get_logger

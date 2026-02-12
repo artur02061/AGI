@@ -21,10 +21,9 @@
 - В memory → emotional tagging при сохранении эпизодов
 """
 
-import re
 import time
 from collections import deque
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional
 from dataclasses import dataclass, field
 
 from utils.logging import get_logger
