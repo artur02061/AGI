@@ -1,0 +1,19 @@
+{
+  "self_model": {
+    "coherence": 0.5,
+    "calibration_error": 0.5,
+    "agency": 0.51,
+    "competence": 0.5,
+    "total_interactions": 0,
+    "total_successes": 0
+  },
+  "known_unknowns": {},
+  "strategy_history": {
+    "direct": [],
+    "tool_use": [],
+    "web_search": [],
+    "delegate": [],
+    "creative": []
+  },
+  "predictions": []
+}

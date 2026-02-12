@@ -1,0 +1,68 @@
+2026-02-12 13:21:39,935 [INFO] kristina.metacognition: 🧠 MetaCognition: 0 predictions, 0 known unknowns
+2026-02-12 13:21:39,975 [INFO] kristina.identity: 🧠 Личность загружена
+2026-02-12 13:21:39,996 [INFO] kristina.system_controller: Инициализация System Controller...
+2026-02-12 13:21:47,482 [INFO] kristina.system_controller: System Controller готов
+2026-02-12 13:21:47,507 [INFO] kristina.web_tools: ✅ Используем библиотеку 'duckduckgo_search' для веб-поиска
+2026-02-12 13:21:48,266 [INFO] kristina.vector_store: ✅ ChromaDB PersistentClient: C:\Users\sushk\AI_Assistant1\kristina5\python\data\vector_db
+2026-02-12 13:21:48,280 [INFO] kristina.vector_store: ✅ Коллекция kristina_memory готова
+2026-02-12 13:21:48,282 [INFO] kristina.vector_store: 📊 Документов: 0 | Кэш: 0
+2026-02-12 13:21:48,307 [INFO] kristina.orchestrator: 🧠 Инициализация Multi-Agent системы...
+2026-02-12 13:21:48,332 [INFO] kristina.vram_manager: ✅ NVML инициализирован
+2026-02-12 13:21:48,334 [INFO] kristina.vram_manager: 🖥️  Агент executor (CPU) всегда доступен
+2026-02-12 13:21:48,334 [INFO] kristina.vram_manager: 🖥️  Агент analyst (CPU) всегда доступен
+2026-02-12 13:21:48,334 [INFO] kristina.vram_manager: 🖥️  Агент reasoner (CPU) всегда доступен
+2026-02-12 13:21:48,334 [INFO] kristina.vram_manager: ✅ VRAM Manager v2.0: Hybrid CPU+GPU режим
+2026-02-12 13:21:48,591 [INFO] kristina.agent.director: 🎮 Агент director (GPU) инициализирован (модель: gemma3:12b)
+2026-02-12 13:21:48,846 [INFO] kristina.agent.executor: 🖥️ Агент executor (CPU) инициализирован (модель: gemma3:4b)
+2026-02-12 13:21:49,101 [INFO] kristina.agent.analyst: 🖥️ Агент analyst (CPU) инициализирован (модель: qwen3:4b)
+2026-02-12 13:21:49,355 [INFO] kristina.agent.reasoner: 🖥️ Агент reasoner (CPU) инициализирован (модель: deepseek-r1:7b)
+2026-02-12 13:21:49,355 [INFO] kristina.orchestrator: ✅ Multi-Agent система готова (агентов: 4)
+2026-02-12 13:21:49,357 [INFO] kristina.orchestrator: 📊 VRAM: {'used_gb': 1.3273239135742188, 'free_gb': 6.672676086425781, 'total_gb': 8.0, 'usage_percent': 16.591548919677734, 'available': True}
+2026-02-12 13:21:55,591 [INFO] kristina.orchestrator: 🎯 Обработка запроса: Привет...
+2026-02-12 13:21:57,969 [INFO] kristina.orchestrator: 🧠 Директор анализирует запрос...
+2026-02-12 13:23:25,517 [INFO] kristina.agent.director: ✅ План: director (simple)
+2026-02-12 13:23:25,518 [INFO] kristina.orchestrator: 📋 План: director + []
+2026-02-12 13:23:25,834 [INFO] kristina.orchestrator: ⚡ Основной агент: director
+2026-02-12 13:23:25,834 [INFO] kristina.agent.director: 🧠 Директор: general
+2026-02-12 13:23:27,558 [INFO] kristina.orchestrator: ✅ director: Привет! Рада тебя видеть. Чем могу помочь? 😊
+2026-02-12 13:23:27,558 [INFO] kristina.orchestrator: 🎨 Директор синтезирует ответ...
+2026-02-12 13:23:36,730 [INFO] kristina.orchestrator: ✅ Запрос обработан за 101.14s
+2026-02-12 13:23:54,492 [INFO] kristina.vram_manager: ✅ NVML корректно завершён
+2026-02-12 13:26:33,369 [INFO] kristina.metacognition: 🧠 MetaCognition: 0 predictions, 0 known unknowns
+2026-02-12 13:26:33,414 [INFO] kristina.identity: 🧠 Личность загружена
+2026-02-12 13:26:33,432 [INFO] kristina.system_controller: Инициализация System Controller...
+2026-02-12 13:26:33,445 [INFO] kristina.system_controller: System Controller готов
+2026-02-12 13:26:33,475 [INFO] kristina.web_tools: ✅ Используем библиотеку 'duckduckgo_search' для веб-поиска
+2026-02-12 13:26:34,303 [INFO] kristina.vector_store: ✅ ChromaDB PersistentClient: C:\Users\sushk\AI_Assistant1\kristina5\python\data\vector_db
+2026-02-12 13:26:34,313 [INFO] kristina.vector_store: ✅ Коллекция kristina_memory готова
+2026-02-12 13:26:34,324 [INFO] kristina.vector_store: ✅ Кэш embeddings: 2 записей
+2026-02-12 13:26:34,365 [INFO] kristina.vector_store: 📊 Документов: 1 | Кэш: 2
+2026-02-12 13:26:34,380 [INFO] kristina.orchestrator: 🧠 Инициализация Multi-Agent системы...
+2026-02-12 13:26:34,408 [INFO] kristina.vram_manager: ✅ NVML инициализирован
+2026-02-12 13:26:34,409 [INFO] kristina.vram_manager: 🖥️  Агент executor (CPU) всегда доступен
+2026-02-12 13:26:34,410 [INFO] kristina.vram_manager: 🖥️  Агент analyst (CPU) всегда доступен
+2026-02-12 13:26:34,410 [INFO] kristina.vram_manager: 🖥️  Агент reasoner (CPU) всегда доступен
+2026-02-12 13:26:34,410 [INFO] kristina.vram_manager: ✅ VRAM Manager v2.0: Hybrid CPU+GPU режим
+2026-02-12 13:26:34,667 [INFO] kristina.agent.director: 🎮 Агент director (GPU) инициализирован (модель: gemma3:12b)
+2026-02-12 13:26:34,923 [INFO] kristina.agent.executor: 🖥️ Агент executor (CPU) инициализирован (модель: gemma3:4b)
+2026-02-12 13:26:35,180 [INFO] kristina.agent.analyst: 🖥️ Агент analyst (CPU) инициализирован (модель: qwen3:4b)
+2026-02-12 13:26:35,437 [INFO] kristina.agent.reasoner: 🖥️ Агент reasoner (CPU) инициализирован (модель: deepseek-r1:7b)
+2026-02-12 13:26:35,437 [INFO] kristina.orchestrator: ✅ Multi-Agent система готова (агентов: 4)
+2026-02-12 13:26:35,440 [INFO] kristina.orchestrator: 📊 VRAM: {'used_gb': 2.3070526123046875, 'free_gb': 5.6929473876953125, 'total_gb': 8.0, 'usage_percent': 28.838157653808594, 'available': True}
+2026-02-12 13:26:44,660 [INFO] kristina.orchestrator: 🎯 Обработка запроса: Ты как?...
+2026-02-12 13:26:46,734 [INFO] kristina.orchestrator: 🧠 Директор анализирует запрос...
+2026-02-12 13:27:34,337 [INFO] kristina.agent.director: ✅ План: director (simple)
+2026-02-12 13:27:34,337 [INFO] kristina.orchestrator: 📋 План: director + []
+2026-02-12 13:27:34,640 [INFO] kristina.orchestrator: ⚡ Основной агент: director
+2026-02-12 13:27:34,641 [INFO] kristina.agent.director: 🧠 Директор: general
+2026-02-12 13:27:37,529 [INFO] kristina.orchestrator: ✅ director: Привет! 😊 У меня все отлично, спасибо, что спросил! Как у тебя дела? Надеюсь, все хорошо!
+2026-02-12 13:27:37,530 [INFO] kristina.orchestrator: 🎨 Директор синтезирует ответ...
+2026-02-12 13:27:46,896 [INFO] kristina.orchestrator: ✅ Запрос обработан за 62.24s
+2026-02-12 13:31:08,438 [INFO] kristina.orchestrator: 🎯 Обработка запроса: Крис, создай текстовый файл на рабочем столе с пож...
+2026-02-12 13:31:08,668 [INFO] kristina.orchestrator: 🧠 Директор анализирует запрос...
+2026-02-12 13:32:05,169 [INFO] kristina.agent.director: ✅ План: executor (simple)
+2026-02-12 13:32:05,170 [INFO] kristina.orchestrator: 📋 План: executor + []
+2026-02-12 13:32:05,474 [INFO] kristina.orchestrator: ⚡ Основной агент: executor
+2026-02-12 13:32:05,475 [INFO] kristina.orchestrator: ✅ executor: ERROR: Не указан инструмент для выполнения
+2026-02-12 13:32:05,476 [INFO] kristina.orchestrator: 🎨 Директор синтезирует ответ...
+2026-02-12 13:32:20,146 [INFO] kristina.orchestrator: ✅ Запрос обработан за 71.71s

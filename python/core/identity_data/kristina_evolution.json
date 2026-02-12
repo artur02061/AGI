@@ -1,0 +1,14 @@
+{
+  "changes": [
+    {
+      "timestamp": "2025-10-18T13:58:10.094539",
+      "adaptation_id": "prefers_brevity",
+      "reason": "Пользователь предпочитает краткие ответы"
+    }
+  ],
+  "adaptations": {
+    "prefers_brevity": {
+      "applied": "2025-10-18T13:58:10.094544"
+    }
+  }
+}

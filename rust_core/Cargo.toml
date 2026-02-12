@@ -1,0 +1,52 @@
+[package]
+name = "kristina_core"
+version = "6.0.0"
+edition = "2021"
+description = "Высокопроизводительное ядро Кристины 6.0"
+
+[lib]
+name = "kristina_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.23", features = ["extension-module"] }
+
+# Сериализация
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# Конкурентность
+dashmap = "6.0"
+parking_lot = "0.12"
+# crossbeam-channel — УДАЛЁН (не используется)
+
+# Текст и паттерны
+aho-corasick = "1.1"
+regex = "1.10"
+unicode-segmentation = "1.11"
+
+# Хэширование / ID
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+uuid = { version = "1.0", features = ["v4"] }
+
+# Время
+chrono = { version = "0.4", features = ["serde"] }
+
+# Логирование
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Параллелизм для batch operations
+rayon = "1.10"
+
+# simd-json — УДАЛЁН (не использовался, serde_json достаточно)
+# simsimd — УДАЛЁН (не использовался, ручной SIMD-friendly loop достаточен)
+# memmap2 — УДАЛЁН (не использовался)
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"

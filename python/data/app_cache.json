@@ -1,0 +1,1437 @@
+{
+  "git": {
+    "name": "git",
+    "path": "C:\\Program Files\\Git\\cmd\\git.exe",
+    "source": "program_files"
+  },
+  "arma 3": {
+    "name": "Arma 3",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\Arma 3\\arma3.exe",
+    "source": "games_folder"
+  },
+  "cyberpunk 2077": {
+    "name": "Cyberpunk 2077",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\Cyberpunk 2077\\REDprelauncher.exe",
+    "source": "games_folder"
+  },
+  "movavi video editor plus 2021": {
+    "name": "Movavi Video Editor Plus 2021",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\Movavi Video Editor Plus 2021\\MonitorsScaleChecker.exe",
+    "source": "games_folder"
+  },
+  "stalcraft: x": {
+    "name": "STALCRAFT: X",
+    "path": "F:\\Program Files (x86)\\Steam\\steam\\games\\0f2dfeed30a8eaafef4cdd6574312198218ce9ee.ico",
+    "source": "registry"
+  },
+  "dayz": {
+    "name": "DayZ",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\DayZ\\DayZDiag_x64.exe",
+    "source": "games_folder"
+  },
+  "7 days to die": {
+    "name": "7 Days To Die",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\7 Days To Die\\7DaysToDie.exe",
+    "source": "games_folder"
+  },
+  "battlefield™ 6": {
+    "name": "Battlefield™ 6",
+    "path": "F:\\Program Files (x86)\\Steam\\steam\\games\\1e5b399eb3bcb274ddec8a4bf2743c6e725aee79.ico",
+    "source": "registry"
+  },
+  "town to city demo": {
+    "name": "Town To City Demo",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\Town To City Demo\\TownToCity.exe",
+    "source": "games_folder"
+  },
+  "godot engine": {
+    "name": "Godot Engine",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\Godot Engine\\godot.windows.opt.tools.64.exe",
+    "source": "games_folder"
+  },
+  "wallpaper engine": {
+    "name": "Wallpaper Engine",
+    "path": "F:\\Program Files (x86)\\Steam\\steam\\games\\5b3bd0d9e5800b933245b5308089a688804787eb.ico",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2008 redistributable - x64 9.0.30729.6161": {
+    "name": "Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729.6161",
+    "path": "C:\\Windows\\system32\\msiexec.exe",
+    "source": "registry"
+  },
+  "microsoft visual studio 2010 tools for office runtime (x64)": {
+    "name": "Microsoft Visual Studio 2010 Tools for Office Runtime (x64)",
+    "path": "C:\\Windows\\system32\\msiexec.exe",
+    "source": "registry"
+  },
+  "amneziavpn": {
+    "name": "AmneziaVPN",
+    "path": "C:\\Program Files\\AmneziaVPN\\AmneziaVPN.exe",
+    "source": "program_files"
+  },
+  "visual studio community 2022": {
+    "name": "Visual Studio Community 2022",
+    "path": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\devenv.exe",
+    "source": "registry"
+  },
+  "visual studio build tools 2026": {
+    "name": "Visual Studio Build Tools 2026",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\Common7\\IDE\\devenv.ico",
+    "source": "registry"
+  },
+  "amd chipset software": {
+    "name": "AMD Chipset Software",
+    "path": "C:\\Program Files (x86)\\AMD\\Chipset_Software\\QT_Dependencies\\Setup.exe",
+    "source": "registry"
+  },
+  "microsoft edge": {
+    "name": "Microsoft Edge",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\144.0.3719.115\\msedge.exe",
+    "source": "registry"
+  },
+  "среда выполнения microsoft edge webview2 runtime": {
+    "name": "Среда выполнения Microsoft Edge WebView2 Runtime",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\144.0.3719.115\\msedgewebview2.exe",
+    "source": "registry"
+  },
+  "openal": {
+    "name": "OpenAL",
+    "path": "C:\\Program Files (x86)\\OpenAL\\oalinst.exe",
+    "source": "registry"
+  },
+  "steam": {
+    "name": "steam",
+    "path": "F:\\Program Files (x86)\\Steam\\steam.exe",
+    "source": "program_files"
+  },
+  "microsoft visual c++ 2012 redistributable (x86) - 11.0.60610 false": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.60610 False",
+    "path": "C:\\ProgramData\\Package Cache\\{01db25f3-1b76-4d97-88c8-1c90634d88fb}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.40664 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40664 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{042d26ef-3dbe-4c25-95d3-4c1b11b235a7}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.30501 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.30501 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{050d4fc8-5d48-4b8f-8972-47c82c46020f}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.40660 false": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40660 False",
+    "path": "C:\\ProgramData\\Package Cache\\{0513c9cf-7191-45a7-ace9-ecdad03c93a4}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ v14 redistributable (x86) - 14.50.35719": {
+    "name": "Microsoft Visual C++ v14 Redistributable (x86) - 14.50.35719",
+    "path": "C:\\ProgramData\\Package Cache\\{0e4ccf1b-d073-4cfe-8a24-e86185719b56}\\VC_redist.x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x64) - 11.0.50727 false": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.50727 False",
+    "path": "C:\\ProgramData\\Package Cache\\{0f12c81f-93ef-46ec-bc94-d952c1a775d4}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.40660 false": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40660 False",
+    "path": "C:\\ProgramData\\Package Cache\\{10dc8dbf-d3d7-4e23-be07-120fe5c66b78}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x64) - 11.0.50727 false eng": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.50727 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{15134cb0-b767-4960-a911-f2d16ae54797}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.30501 false": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.30501 False",
+    "path": "C:\\ProgramData\\Package Cache\\{1a63c099-febd-4eaf-83ad-a82ea4fdac49}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x86) - 11.0.50727 false eng": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.50727 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{22154f09-719a-4619-bb71-5b3356999fbf}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.21005 false": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.21005 False",
+    "path": "C:\\ProgramData\\Package Cache\\{2af972c7-13b0-4978-92a8-fee26a4fb4e9}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x86) - 11.0.61030 false eng": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.61030 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{33d1fd90-4274-48a1-9bc1-97e33d9c2d6f}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x64) - 11.0.51106 false": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.51106 False",
+    "path": "C:\\ProgramData\\Package Cache\\{35459b22-19a6-44ec-8d34-27eb3131acac}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.40649 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40649 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{35b83883-40fa-423c-ae73-2aff7e1ea820}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.40664": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40664",
+    "path": "C:\\ProgramData\\Package Cache\\{49e969a1-2990-464d-92b5-25f6f34573c6}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.21005 false": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.21005 False",
+    "path": "C:\\ProgramData\\Package Cache\\{51adbf11-493f-431c-a862-967a0fae2944}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.40649 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40649 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{5d0723d3-cff7-4e07-8d0b-ada737deb5e6}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.40660 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40660 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{61087a79-ac85-455c-934d-1fa22cc64f36}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x86) - 11.0.51106 false": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.51106 False",
+    "path": "C:\\ProgramData\\Package Cache\\{615bc16d-60f5-482e-91b3-b51d8130963b}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x86) - 11.0.50727 false": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.50727 False",
+    "path": "C:\\ProgramData\\Package Cache\\{6c95b50e-cb5a-4a1f-a7b4-8a6004f8dd6a}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x64) - 11.0.51106 false eng": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.51106 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{6e8f74e0-43bd-4dce-8477-6ff6828acc07}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.40649 false": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40649 False",
+    "path": "C:\\ProgramData\\Package Cache\\{78142960-066b-4581-b984-0bdcf560c4be}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.21005 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.21005 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{7f51bdb9-ee21-49ee-94d6-90afc321780e}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "python 3.1.1": {
+    "name": "Python 3.1.1",
+    "path": "C:\\Python31\\python.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x86) - 11.0.51106 false eng": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.51106 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{8e70e4e1-06d7-470b-9f74-a51bef21088e}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ v14 redistributable (x64) - 14.50.35719": {
+    "name": "Microsoft Visual C++ v14 Redistributable (x64) - 14.50.35719",
+    "path": "C:\\ProgramData\\Package Cache\\{91ee571b-0e8a-4c65-9eaf-2e2f5fc60c00}\\VC_redist.x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x86) - 11.0.60610 false eng": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.60610 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{95716cce-fc71-413f-8ad5-56c2892d4b3a}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2008 redistributable - x86 9.0.30729.6161": {
+    "name": "Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729.6161",
+    "path": "C:\\Windows\\SysWOW64\\msiexec.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.40664 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40664 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{9dff3540-fc85-4ed5-ac84-9e3c7fd8bece}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x64) - 11.0.60610 false eng": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.60610 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{a1909659-0a08-4554-8af1-2175904903a1}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x64) - 11.0.61030": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.61030",
+    "path": "C:\\ProgramData\\Package Cache\\{a2199617-3609-410f-a8e8-e8806c73545b}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft windows desktop runtime - 8.0.22 (x64)": {
+    "name": "Microsoft Windows Desktop Runtime - 8.0.22 (x64)",
+    "path": "C:\\ProgramData\\Package Cache\\{a3899eef-6164-4d42-b8c3-95ae6a844821}\\windowsdesktop-runtime-8.0.22-win-x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.30501 false": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.30501 False",
+    "path": "C:\\ProgramData\\Package Cache\\{b55f7208-e02b-4828-ac78-59c73ddf5bc7}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "windows software development kit - windows 10.0.26100.7175": {
+    "name": "Windows Software Development Kit - Windows 10.0.26100.7175",
+    "path": "C:\\ProgramData\\Package Cache\\{b5ab6bbd-62a1-45bd-af43-2ea6ac4c3486}\\winsdksetup.exe",
+    "source": "registry"
+  },
+  "microsoft visual basic/c++ runtime (x86)": {
+    "name": "Microsoft Visual Basic/C++ Runtime (x86)",
+    "path": "C:\\Windows\\SysWOW64\\msiexec.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.40649 false": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40649 False",
+    "path": "C:\\ProgramData\\Package Cache\\{c6870a89-ef30-4f22-bbd1-49cd2516bc56}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x64) - 11.0.61030 false eng": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.61030 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{ca67548a-5ebe-413a-b50c-4b9ceb6d66c6}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.21005 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.21005 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{ce085a78-074e-4823-8dc1-8a721b94b76d}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.40664": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40664",
+    "path": "C:\\ProgramData\\Package Cache\\{d2c8df0e-f15d-4426-9e51-f13f329f9cb4}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x64) - 11.0.60610 false": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.60610 False",
+    "path": "C:\\ProgramData\\Package Cache\\{dde2682b-961a-41ea-8d44-6005991b7947}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x64) - 12.0.40660 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40660 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{ef6b00ec-13e1-4c25-9064-b2f383cb8412}\\vcredist_x64.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2012 redistributable (x86) - 11.0.61030": {
+    "name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.61030",
+    "path": "C:\\ProgramData\\Package Cache\\{f0080ca2-80ae-4958-b6eb-e8fa916d744a}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "microsoft visual c++ 2013 redistributable (x86) - 12.0.30501 false eng": {
+    "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.30501 False Eng",
+    "path": "C:\\ProgramData\\Package Cache\\{f65db027-aff3-4070-886a-0d87064aabb1}\\vcredist_x86.exe",
+    "source": "registry"
+  },
+  "hydra": {
+    "name": "Hydra",
+    "path": "F:\\Users\\sushk\\AppData\\Local\\Programs\\Hydra\\Hydra.exe",
+    "source": "registry"
+  },
+  "comet": {
+    "name": "Comet",
+    "path": "C:\\Users\\sushk\\AppData\\Local\\Perplexity\\Comet\\Application\\comet.exe",
+    "source": "registry"
+  },
+  "python 3.11.9 (64-bit)": {
+    "name": "Python 3.11.9 (64-bit)",
+    "path": "C:\\Users\\sushk\\AppData\\Local\\Package Cache\\{1da2e09b-199c-4def-9a99-93a8c1b8ddf2}\\python-3.11.9-amd64.exe",
+    "source": "registry"
+  },
+  "ollama version 0.15.6": {
+    "name": "Ollama version 0.15.6",
+    "path": "C:\\Users\\sushk\\AppData\\Local\\Programs\\Ollama\\unins000.exe",
+    "source": "registry"
+  },
+  "microsoft visual studio code (user)": {
+    "name": "Microsoft Visual Studio Code (User)",
+    "path": "C:\\Users\\sushk\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",
+    "source": "registry"
+  },
+  "amneziavpn-service": {
+    "name": "AmneziaVPN-service",
+    "path": "C:\\Program Files\\AmneziaVPN\\AmneziaVPN-service.exe",
+    "source": "program_files"
+  },
+  "maintenancetool": {
+    "name": "maintenancetool",
+    "path": "C:\\Program Files\\AmneziaVPN\\maintenancetool.exe",
+    "source": "program_files"
+  },
+  "vc_redist.x64": {
+    "name": "vc_redist.x64",
+    "path": "C:\\Program Files\\AmneziaVPN\\vc_redist.x64.exe",
+    "source": "program_files"
+  },
+  "ck-client": {
+    "name": "ck-client",
+    "path": "C:\\Program Files\\AmneziaVPN\\cloak\\ck-client.exe",
+    "source": "program_files"
+  },
+  "ssh-keygen": {
+    "name": "ssh-keygen",
+    "path": "C:\\Program Files\\AmneziaVPN\\cygwin\\ssh-keygen.exe",
+    "source": "program_files"
+  },
+  "openvpn": {
+    "name": "openvpn",
+    "path": "C:\\Program Files\\AmneziaVPN\\openvpn\\openvpn.exe",
+    "source": "program_files"
+  },
+  "ss-local": {
+    "name": "ss-local",
+    "path": "C:\\Program Files\\AmneziaVPN\\ss\\ss-local.exe",
+    "source": "program_files"
+  },
+  "ss-tunnel": {
+    "name": "ss-tunnel",
+    "path": "C:\\Program Files\\AmneziaVPN\\ss\\ss-tunnel.exe",
+    "source": "program_files"
+  },
+  "tun2socks": {
+    "name": "tun2socks",
+    "path": "C:\\Program Files\\AmneziaVPN\\xray\\tun2socks.exe",
+    "source": "program_files"
+  },
+  "dotnet": {
+    "name": "dotnet",
+    "path": "C:\\Program Files\\dotnet\\dotnet.exe",
+    "source": "program_files"
+  },
+  "eaanticheat.gameservice": {
+    "name": "EAAntiCheat.GameService",
+    "path": "C:\\Program Files\\EA\\AC\\EAAntiCheat.GameService.exe",
+    "source": "program_files"
+  },
+  "eaanticheat.installer": {
+    "name": "EAAntiCheat.Installer",
+    "path": "C:\\Program Files\\EA\\AC\\EAAntiCheat.Installer.exe",
+    "source": "program_files"
+  },
+  "git-bash": {
+    "name": "git-bash",
+    "path": "C:\\Program Files\\Git\\git-bash.exe",
+    "source": "program_files"
+  },
+  "git-cmd": {
+    "name": "git-cmd",
+    "path": "C:\\Program Files\\Git\\git-cmd.exe",
+    "source": "program_files"
+  },
+  "bash": {
+    "name": "bash",
+    "path": "C:\\Program Files\\Git\\bin\\bash.exe",
+    "source": "program_files"
+  },
+  "sh": {
+    "name": "sh",
+    "path": "C:\\Program Files\\Git\\bin\\sh.exe",
+    "source": "program_files"
+  },
+  "git-gui": {
+    "name": "git-gui",
+    "path": "C:\\Program Files\\Git\\cmd\\git-gui.exe",
+    "source": "program_files"
+  },
+  "git-lfs": {
+    "name": "git-lfs",
+    "path": "C:\\Program Files\\Git\\cmd\\git-lfs.exe",
+    "source": "program_files"
+  },
+  "git-receive-pack": {
+    "name": "git-receive-pack",
+    "path": "C:\\Program Files\\Git\\cmd\\git-receive-pack.exe",
+    "source": "program_files"
+  },
+  "git-upload-pack": {
+    "name": "git-upload-pack",
+    "path": "C:\\Program Files\\Git\\cmd\\git-upload-pack.exe",
+    "source": "program_files"
+  },
+  "gitk": {
+    "name": "gitk",
+    "path": "C:\\Program Files\\Git\\cmd\\gitk.exe",
+    "source": "program_files"
+  },
+  "scalar": {
+    "name": "scalar",
+    "path": "C:\\Program Files\\Git\\cmd\\scalar.exe",
+    "source": "program_files"
+  },
+  "tig": {
+    "name": "tig",
+    "path": "C:\\Program Files\\Git\\cmd\\tig.exe",
+    "source": "program_files"
+  },
+  "extexport": {
+    "name": "ExtExport",
+    "path": "C:\\Program Files (x86)\\Internet Explorer\\ExtExport.exe",
+    "source": "program_files"
+  },
+  "iediagcmd": {
+    "name": "iediagcmd",
+    "path": "C:\\Program Files\\Internet Explorer\\iediagcmd.exe",
+    "source": "program_files"
+  },
+  "ieinstal": {
+    "name": "ieinstal",
+    "path": "C:\\Program Files (x86)\\Internet Explorer\\ieinstal.exe",
+    "source": "program_files"
+  },
+  "ielowutil": {
+    "name": "ielowutil",
+    "path": "C:\\Program Files (x86)\\Internet Explorer\\ielowutil.exe",
+    "source": "program_files"
+  },
+  "iexplore": {
+    "name": "iexplore",
+    "path": "C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe",
+    "source": "program_files"
+  },
+  "configsecuritypolicy": {
+    "name": "ConfigSecurityPolicy",
+    "path": "C:\\Program Files\\Windows Defender\\ConfigSecurityPolicy.exe",
+    "source": "program_files"
+  },
+  "dlpuseragent": {
+    "name": "DlpUserAgent",
+    "path": "C:\\Program Files\\Windows Defender\\DlpUserAgent.exe",
+    "source": "program_files"
+  },
+  "mipdlp": {
+    "name": "MipDlp",
+    "path": "C:\\Program Files\\Windows Defender\\MipDlp.exe",
+    "source": "program_files"
+  },
+  "mpcmdrun": {
+    "name": "MpCmdRun",
+    "path": "C:\\Program Files (x86)\\Windows Defender\\MpCmdRun.exe",
+    "source": "program_files"
+  },
+  "mpcopyaccelerator": {
+    "name": "MpCopyAccelerator",
+    "path": "C:\\Program Files\\Windows Defender\\MpCopyAccelerator.exe",
+    "source": "program_files"
+  },
+  "mpdefendercoreservice": {
+    "name": "MpDefenderCoreService",
+    "path": "C:\\Program Files\\Windows Defender\\MpDefenderCoreService.exe",
+    "source": "program_files"
+  },
+  "mpdlpcmd": {
+    "name": "MpDlpCmd",
+    "path": "C:\\Program Files\\Windows Defender\\MpDlpCmd.exe",
+    "source": "program_files"
+  },
+  "mpdlpservice": {
+    "name": "MpDlpService",
+    "path": "C:\\Program Files\\Windows Defender\\MpDlpService.exe",
+    "source": "program_files"
+  },
+  "mpextms": {
+    "name": "mpextms",
+    "path": "C:\\Program Files\\Windows Defender\\mpextms.exe",
+    "source": "program_files"
+  },
+  "msmpeng": {
+    "name": "MsMpEng",
+    "path": "C:\\Program Files\\Windows Defender\\MsMpEng.exe",
+    "source": "program_files"
+  },
+  "nissrv": {
+    "name": "NisSrv",
+    "path": "C:\\Program Files\\Windows Defender\\NisSrv.exe",
+    "source": "program_files"
+  },
+  "offlinescannershell": {
+    "name": "OfflineScannerShell",
+    "path": "C:\\Program Files\\Windows Defender\\Offline\\OfflineScannerShell.exe",
+    "source": "program_files"
+  },
+  "mssense": {
+    "name": "MsSense",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\MsSense.exe",
+    "source": "program_files"
+  },
+  "senseap": {
+    "name": "SenseAP",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseAP.exe",
+    "source": "program_files"
+  },
+  "senseaptoast": {
+    "name": "SenseAPToast",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseAPToast.exe",
+    "source": "program_files"
+  },
+  "sensecm": {
+    "name": "SenseCM",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseCM.exe",
+    "source": "program_files"
+  },
+  "sensedlpprocessor": {
+    "name": "SenseDlpProcessor",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseDlpProcessor.exe",
+    "source": "program_files"
+  },
+  "sensegpparser": {
+    "name": "SenseGPParser",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseGPParser.exe",
+    "source": "program_files"
+  },
+  "senseidentity": {
+    "name": "SenseIdentity",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseIdentity.exe",
+    "source": "program_files"
+  },
+  "senseimdscollector": {
+    "name": "SenseImdsCollector",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseImdsCollector.exe",
+    "source": "program_files"
+  },
+  "senseir": {
+    "name": "SenseIR",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseIR.exe",
+    "source": "program_files"
+  },
+  "sensendr": {
+    "name": "SenseNdr",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseNdr.exe",
+    "source": "program_files"
+  },
+  "sensesampleuploader": {
+    "name": "SenseSampleUploader",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseSampleUploader.exe",
+    "source": "program_files"
+  },
+  "sensetracer": {
+    "name": "SenseTracer",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseTracer.exe",
+    "source": "program_files"
+  },
+  "sensetvm": {
+    "name": "SenseTVM",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseTVM.exe",
+    "source": "program_files"
+  },
+  "sensece": {
+    "name": "SenseCE",
+    "path": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\Classification\\SenseCE.exe",
+    "source": "program_files"
+  },
+  "wab": {
+    "name": "wab",
+    "path": "C:\\Program Files (x86)\\Windows Mail\\wab.exe",
+    "source": "program_files"
+  },
+  "wabmig": {
+    "name": "wabmig",
+    "path": "C:\\Program Files (x86)\\Windows Mail\\wabmig.exe",
+    "source": "program_files"
+  },
+  "wmlaunch": {
+    "name": "wmlaunch",
+    "path": "C:\\Program Files (x86)\\Windows Media Player\\wmlaunch.exe",
+    "source": "program_files"
+  },
+  "wmpconfig": {
+    "name": "wmpconfig",
+    "path": "C:\\Program Files (x86)\\Windows Media Player\\wmpconfig.exe",
+    "source": "program_files"
+  },
+  "wmplayer": {
+    "name": "wmplayer",
+    "path": "C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe",
+    "source": "program_files"
+  },
+  "wmpnetwk": {
+    "name": "wmpnetwk",
+    "path": "C:\\Program Files\\Windows Media Player\\wmpnetwk.exe",
+    "source": "program_files"
+  },
+  "wmpnscfg": {
+    "name": "wmpnscfg",
+    "path": "C:\\Program Files\\Windows Media Player\\wmpnscfg.exe",
+    "source": "program_files"
+  },
+  "wmprph": {
+    "name": "wmprph",
+    "path": "C:\\Program Files (x86)\\Windows Media Player\\wmprph.exe",
+    "source": "program_files"
+  },
+  "wmpshare": {
+    "name": "wmpshare",
+    "path": "C:\\Program Files (x86)\\Windows Media Player\\wmpshare.exe",
+    "source": "program_files"
+  },
+  "imagingdevices": {
+    "name": "ImagingDevices",
+    "path": "C:\\Program Files (x86)\\Windows Photo Viewer\\ImagingDevices.exe",
+    "source": "program_files"
+  },
+  "microsoft.msn.news": {
+    "name": "Microsoft.Msn.News",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.bingnews_4.55.62231.0_x64__8wekyb3d8bbwe\\Microsoft.Msn.News.exe",
+    "source": "program_files"
+  },
+  "microsoftbing": {
+    "name": "MicrosoftBing",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.bingsearch_1.1.40.0_x64__8wekyb3d8bbwe\\MicrosoftBing.exe",
+    "source": "program_files"
+  },
+  "microsoft.msn.weather": {
+    "name": "Microsoft.Msn.Weather",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.bingweather_4.54.63029.0_x64__8wekyb3d8bbwe\\Microsoft.Msn.Weather.exe",
+    "source": "program_files"
+  },
+  "appinstaller": {
+    "name": "AppInstaller",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.27.460.0_x64__8wekyb3d8bbwe\\AppInstaller.exe",
+    "source": "program_files"
+  },
+  "appinstallerprotocolshim": {
+    "name": "AppInstallerProtocolShim",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.27.460.0_x64__8wekyb3d8bbwe\\AppInstallerProtocolShim.exe",
+    "source": "program_files"
+  },
+  "appinstallerpythonredirector": {
+    "name": "AppInstallerPythonRedirector",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.27.460.0_x64__8wekyb3d8bbwe\\AppInstallerPythonRedirector.exe",
+    "source": "program_files"
+  },
+  "authenticationmanager": {
+    "name": "AuthenticationManager",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.27.460.0_x64__8wekyb3d8bbwe\\AuthenticationManager.exe",
+    "source": "program_files"
+  },
+  "windowspackagemanagerserver": {
+    "name": "WindowsPackageManagerServer",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.27.460.0_x64__8wekyb3d8bbwe\\WindowsPackageManagerServer.exe",
+    "source": "program_files"
+  },
+  "winget": {
+    "name": "winget",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.27.460.0_x64__8wekyb3d8bbwe\\winget.exe",
+    "source": "program_files"
+  },
+  "edgegameassist": {
+    "name": "EdgeGameAssist",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.edge.gameassist_1.0.3590.0_x64__8wekyb3d8bbwe\\EdgeGameAssist.exe",
+    "source": "program_files"
+  },
+  "xboxgamebarwidgets": {
+    "name": "XboxGameBarWidgets",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2512.1001.34.0_x64__8wekyb3d8bbwe\\XboxGameBarWidgets.exe",
+    "source": "program_files"
+  },
+  "xboxpartychathost": {
+    "name": "XboxPartyChatHost",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2512.1001.34.0_x64__8wekyb3d8bbwe\\XboxPartyChatHost.exe",
+    "source": "program_files"
+  },
+  "xboxpcapp": {
+    "name": "XboxPcApp",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2512.1001.34.0_x64__8wekyb3d8bbwe\\XboxPcApp.exe",
+    "source": "program_files"
+  },
+  "xboxpcappadminserver": {
+    "name": "XboxPcAppAdminServer",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2512.1001.34.0_x64__8wekyb3d8bbwe\\XboxPcAppAdminServer.exe",
+    "source": "program_files"
+  },
+  "xboxpcappce": {
+    "name": "XboxPcAppCE",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2512.1001.34.0_x64__8wekyb3d8bbwe\\XboxPcAppCE.exe",
+    "source": "program_files"
+  },
+  "xboxpcappft": {
+    "name": "XboxPcAppFT",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2512.1001.34.0_x64__8wekyb3d8bbwe\\XboxPcAppFT.exe",
+    "source": "program_files"
+  },
+  "xboxpctray": {
+    "name": "XboxPcTray",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2512.1001.34.0_x64__8wekyb3d8bbwe\\XboxPcTray.exe",
+    "source": "program_files"
+  },
+  "createdump": {
+    "name": "createdump",
+    "path": "C:\\Program Files\\WSL\\wslsettings\\createdump.exe",
+    "source": "program_files"
+  },
+  "gethelp": {
+    "name": "GetHelp",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GetHelp_10.2409.33293.0_x64__8wekyb3d8bbwe\\GetHelp.exe",
+    "source": "program_files"
+  },
+  "m365copilot": {
+    "name": "M365Copilot",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftOfficeHub_19.2512.53121.0_x64__8wekyb3d8bbwe\\M365Copilot.exe",
+    "source": "program_files"
+  },
+  "m365copilot_autostarter": {
+    "name": "m365copilot_autostarter",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftOfficeHub_19.2512.53121.0_x64__8wekyb3d8bbwe\\m365copilot_autostarter.exe",
+    "source": "program_files"
+  },
+  "m365copilot_widget": {
+    "name": "m365copilot_widget",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftOfficeHub_19.2512.53121.0_x64__8wekyb3d8bbwe\\m365copilot_widget.exe",
+    "source": "program_files"
+  },
+  "webviewhost": {
+    "name": "WebViewHost",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftOfficeHub_19.2512.53121.0_x64__8wekyb3d8bbwe\\WebViewHost.exe",
+    "source": "program_files"
+  },
+  "microsoft.microsoftsolitairecollection": {
+    "name": "Microsoft.MicrosoftSolitaireCollection",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_x64__8wekyb3d8bbwe\\Microsoft.MicrosoftSolitaireCollection.exe",
+    "source": "program_files"
+  },
+  "solitaire": {
+    "name": "Solitaire",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_x64__8wekyb3d8bbwe\\Solitaire.exe",
+    "source": "program_files"
+  },
+  "microsoft.notes": {
+    "name": "Microsoft.Notes",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftStickyNotes_6.1.4.0_x64__8wekyb3d8bbwe\\Microsoft.Notes.exe",
+    "source": "program_files"
+  },
+  "mixedrealityportal.brokered": {
+    "name": "MixedRealityPortal.Brokered",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.mixedreality.portal_2000.21051.1282.0_x64__8wekyb3d8bbwe\\MixedRealityPortal.Brokered.exe",
+    "source": "program_files"
+  },
+  "mixedrealityportal": {
+    "name": "MixedRealityPortal",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.mixedreality.portal_2000.21051.1282.0_x64__8wekyb3d8bbwe\\MixedRealityPortal.exe",
+    "source": "program_files"
+  },
+  "onenoteim": {
+    "name": "onenoteim",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.office.onenote_16001.14326.22594.0_x64__8wekyb3d8bbwe\\onenoteim.exe",
+    "source": "program_files"
+  },
+  "onenoteshare": {
+    "name": "onenoteshare",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.office.onenote_16001.14326.22594.0_x64__8wekyb3d8bbwe\\onenoteshare.exe",
+    "source": "program_files"
+  },
+  "olk": {
+    "name": "olk",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.outlookforwindows_1.2025.1007.400_x64__8wekyb3d8bbwe\\olk.exe",
+    "source": "program_files"
+  },
+  "olkbg": {
+    "name": "olkBg",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.outlookforwindows_1.2025.1007.400_x64__8wekyb3d8bbwe\\olkBg.exe",
+    "source": "program_files"
+  },
+  "olkexthost": {
+    "name": "olkexthost",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.outlookforwindows_1.2025.1007.400_x64__8wekyb3d8bbwe\\olkexthost.exe",
+    "source": "program_files"
+  },
+  "olkfulltrustexecutor": {
+    "name": "olkFullTrustExecutor",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.outlookforwindows_1.2025.1007.400_x64__8wekyb3d8bbwe\\olkFullTrustExecutor.exe",
+    "source": "program_files"
+  },
+  "olkmcpserver": {
+    "name": "olkMcpServer",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.outlookforwindows_1.2025.1007.400_x64__8wekyb3d8bbwe\\olkMcpServer.exe",
+    "source": "program_files"
+  },
+  "olkpushnotificationbackgroundtask": {
+    "name": "olkPushNotificationBackgroundTask",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.outlookforwindows_1.2025.1007.400_x64__8wekyb3d8bbwe\\olkPushNotificationBackgroundTask.exe",
+    "source": "program_files"
+  },
+  "relaunchnativehost": {
+    "name": "relaunchNativeHost",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.outlookforwindows_1.2025.1007.400_x64__8wekyb3d8bbwe\\relaunchNativeHost.exe",
+    "source": "program_files"
+  },
+  "xpdagent": {
+    "name": "xpdAgent",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.outlookforwindows_1.2025.1007.400_x64__8wekyb3d8bbwe\\xpdAgent.exe",
+    "source": "program_files"
+  },
+  "peopleapp": {
+    "name": "PeopleApp",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.people_10.2202.100.0_x64__8wekyb3d8bbwe\\PeopleApp.exe",
+    "source": "program_files"
+  },
+  "pad.bridgetohllapix64": {
+    "name": "PAD.BridgeToHLLAPIx64",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.BridgeToHLLAPIx64.exe",
+    "source": "program_files"
+  },
+  "pad.bridgetohllapix86": {
+    "name": "PAD.BridgeToHLLAPIx86",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.BridgeToHLLAPIx86.exe",
+    "source": "program_files"
+  },
+  "pad.bridgetomodix86": {
+    "name": "PAD.BridgeToMODIx86",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.BridgeToMODIx86.exe",
+    "source": "program_files"
+  },
+  "pad.childsession.installer.host": {
+    "name": "PAD.ChildSession.Installer.Host",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.ChildSession.Installer.Host.exe",
+    "source": "program_files"
+  },
+  "pad.childsession.service.host": {
+    "name": "PAD.ChildSession.Service.Host",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.ChildSession.Service.Host.exe",
+    "source": "program_files"
+  },
+  "pad.console.host": {
+    "name": "PAD.Console.Host",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.Console.Host.exe",
+    "source": "program_files"
+  },
+  "pad.datacollectionswitch": {
+    "name": "PAD.DataCollectionSwitch",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.DataCollectionSwitch.exe",
+    "source": "program_files"
+  },
+  "pad.moduleinitialization": {
+    "name": "PAD.ModuleInitialization",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.ModuleInitialization.exe",
+    "source": "program_files"
+  },
+  "pad.packageupgrader": {
+    "name": "PAD.PackageUpgrader",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.PackageUpgrader.exe",
+    "source": "program_files"
+  },
+  "pad.robotv2": {
+    "name": "PAD.RobotV2",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\PAD.RobotV2.exe",
+    "source": "program_files"
+  },
+  "troubleshootingtool.console": {
+    "name": "TroubleshootingTool.Console",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2601.105.0_x64__8wekyb3d8bbwe\\TroubleshootingTool.Console.exe",
+    "source": "program_files"
+  },
+  "sechealthui": {
+    "name": "SecHealthUI",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.sechealthui_1000.29429.1000.0_x64__8wekyb3d8bbwe\\SecHealthUI.exe",
+    "source": "program_files"
+  },
+  "storeexperiencehost": {
+    "name": "StoreExperienceHost",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.StorePurchaseApp_22512.1401.1.0_x64__8wekyb3d8bbwe\\StoreExperienceHost.exe",
+    "source": "program_files"
+  },
+  "todo": {
+    "name": "Todo",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.Todos_2.153.5851.0_x64__8wekyb3d8bbwe\\Todo.exe",
+    "source": "program_files"
+  },
+  "fileexplorergitintegration": {
+    "name": "FileExplorerGitIntegration",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.Windows.DevHome_0.2101.858.0_x64__8wekyb3d8bbwe\\FileExplorerGitIntegration.exe",
+    "source": "program_files"
+  },
+  "fileexplorersourcecontrolintegration": {
+    "name": "FileExplorerSourceControlIntegration",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.Windows.DevHome_0.2101.858.0_x64__8wekyb3d8bbwe\\FileExplorerSourceControlIntegration.exe",
+    "source": "program_files"
+  },
+  "windowsadvancedsettings": {
+    "name": "WindowsAdvancedSettings",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.Windows.DevHome_0.2101.858.0_x64__8wekyb3d8bbwe\\WindowsAdvancedSettings.exe",
+    "source": "program_files"
+  },
+  "photos.autoplay": {
+    "name": "Photos.AutoPlay",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.Windows.Photos_2025.11120.5001.0_x64__8wekyb3d8bbwe\\Photos.AutoPlay.exe",
+    "source": "program_files"
+  },
+  "photos": {
+    "name": "Photos",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.Windows.Photos_2025.11120.5001.0_x64__8wekyb3d8bbwe\\Photos.exe",
+    "source": "program_files"
+  },
+  "time": {
+    "name": "Time",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsAlarms_11.2512.0.0_x64__8wekyb3d8bbwe\\Time.exe",
+    "source": "program_files"
+  },
+  "deploymentagent": {
+    "name": "DeploymentAgent",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsAppRuntime.1.8_8000.770.947.0_x86__8wekyb3d8bbwe\\DeploymentAgent.exe",
+    "source": "program_files"
+  },
+  "restartagent": {
+    "name": "RestartAgent",
+    "path": "C:\\Program Files\\WSL\\wslsettings\\RestartAgent.exe",
+    "source": "program_files"
+  },
+  "calculatorapp": {
+    "name": "CalculatorApp",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsCalculator_11.2508.4.0_x64__8wekyb3d8bbwe\\CalculatorApp.exe",
+    "source": "program_files"
+  },
+  "windowscamera": {
+    "name": "WindowsCamera",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsCamera_2025.2510.2.0_x64__8wekyb3d8bbwe\\WindowsCamera.exe",
+    "source": "program_files"
+  },
+  "hxaccounts": {
+    "name": "HxAccounts",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.windowscommunicationsapps_16005.14326.22342.0_x64__8wekyb3d8bbwe\\HxAccounts.exe",
+    "source": "program_files"
+  },
+  "hxcalendarappimm": {
+    "name": "HxCalendarAppImm",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.windowscommunicationsapps_16005.14326.22342.0_x64__8wekyb3d8bbwe\\HxCalendarAppImm.exe",
+    "source": "program_files"
+  },
+  "hxoutlook": {
+    "name": "HxOutlook",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.windowscommunicationsapps_16005.14326.22342.0_x64__8wekyb3d8bbwe\\HxOutlook.exe",
+    "source": "program_files"
+  },
+  "hxtsr": {
+    "name": "HxTsr",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.windowscommunicationsapps_16005.14326.22342.0_x64__8wekyb3d8bbwe\\HxTsr.exe",
+    "source": "program_files"
+  },
+  "pilotshubapp": {
+    "name": "PilotshubApp",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsFeedbackHub_1.2512.16303.0_x64__8wekyb3d8bbwe\\PilotshubApp.exe",
+    "source": "program_files"
+  },
+  "maps": {
+    "name": "Maps",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsMaps_11.2506.3.0_x64__8wekyb3d8bbwe\\Maps.exe",
+    "source": "program_files"
+  },
+  "voicerecorder": {
+    "name": "VoiceRecorder",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsSoundRecorder_11.2512.0.0_x64__8wekyb3d8bbwe\\VoiceRecorder.exe",
+    "source": "program_files"
+  },
+  "store": {
+    "name": "store",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22512.1401.6.0_x64__8wekyb3d8bbwe\\store.exe",
+    "source": "program_files"
+  },
+  "storeconsole.app": {
+    "name": "StoreConsole.App",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22512.1401.6.0_x64__8wekyb3d8bbwe\\StoreConsole.App.exe",
+    "source": "program_files"
+  },
+  "storedesktopextension": {
+    "name": "StoreDesktopExtension",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22512.1401.6.0_x64__8wekyb3d8bbwe\\StoreDesktopExtension.exe",
+    "source": "program_files"
+  },
+  "storemcpserver": {
+    "name": "StoreMcpServer",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22512.1401.6.0_x64__8wekyb3d8bbwe\\StoreMcpServer.exe",
+    "source": "program_files"
+  },
+  "winstore.app": {
+    "name": "WinStore.App",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22512.1401.6.0_x64__8wekyb3d8bbwe\\WinStore.App.exe",
+    "source": "program_files"
+  },
+  "elevate-shim": {
+    "name": "elevate-shim",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.23.20211.0_x64__8wekyb3d8bbwe\\elevate-shim.exe",
+    "source": "program_files"
+  },
+  "openconsole": {
+    "name": "OpenConsole",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.23.20211.0_x64__8wekyb3d8bbwe\\OpenConsole.exe",
+    "source": "program_files"
+  },
+  "terminalazbridge": {
+    "name": "TerminalAzBridge",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.23.20211.0_x64__8wekyb3d8bbwe\\TerminalAzBridge.exe",
+    "source": "program_files"
+  },
+  "windowsterminal": {
+    "name": "WindowsTerminal",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.23.20211.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe",
+    "source": "program_files"
+  },
+  "wt": {
+    "name": "wt",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.23.20211.0_x64__8wekyb3d8bbwe\\wt.exe",
+    "source": "program_files"
+  },
+  "tcui-app": {
+    "name": "TCUI-App",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.xbox.tcui_1.24.10001.0_x64__8wekyb3d8bbwe\\TCUI-App.exe",
+    "source": "program_files"
+  },
+  "gamebar": {
+    "name": "GameBar",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.XboxGamingOverlay_7.325.11061.0_x64__8wekyb3d8bbwe\\GameBar.exe",
+    "source": "program_files"
+  },
+  "gamebarelevatedft": {
+    "name": "GameBarElevatedFT",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.XboxGamingOverlay_7.325.11061.0_x64__8wekyb3d8bbwe\\GameBarElevatedFT.exe",
+    "source": "program_files"
+  },
+  "gamebarftserver": {
+    "name": "GameBarFTServer",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.XboxGamingOverlay_7.325.11061.0_x64__8wekyb3d8bbwe\\GameBarFTServer.exe",
+    "source": "program_files"
+  },
+  "xboxidp": {
+    "name": "XboxIdp",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.XboxIdentityProvider_12.130.16001.0_x64__8wekyb3d8bbwe\\XboxIdp.exe",
+    "source": "program_files"
+  },
+  "speechtotextoverlay64-retail": {
+    "name": "SpeechToTextOverlay64-Retail",
+    "path": "C:\\Program Files\\WindowsApps\\microsoft.xboxspeechtotextoverlay_1.97.17002.0_x64__8wekyb3d8bbwe\\SpeechToTextOverlay64-Retail.exe",
+    "source": "program_files"
+  },
+  "phoneexperiencehost": {
+    "name": "PhoneExperienceHost",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.YourPhone_1.25112.36.0_x64__8wekyb3d8bbwe\\PhoneExperienceHost.exe",
+    "source": "program_files"
+  },
+  "yourphoneappproxy": {
+    "name": "YourPhoneAppProxy",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.YourPhone_1.25112.36.0_x64__8wekyb3d8bbwe\\YourPhoneAppProxy.exe",
+    "source": "program_files"
+  },
+  "microsoft.media.player": {
+    "name": "Microsoft.Media.Player",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.ZuneMusic_11.2512.10.0_x64__8wekyb3d8bbwe\\Microsoft.Media.Player.exe",
+    "source": "program_files"
+  },
+  "video.ui": {
+    "name": "Video.UI",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.ZuneVideo_10.25121.10051.0_x64__8wekyb3d8bbwe\\Video.UI.exe",
+    "source": "program_files"
+  },
+  "dynamicdependency.datastore": {
+    "name": "DynamicDependency.DataStore",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftCorporationII.WinAppRuntime.Main.1.8_8000.731.1532.0_x64__8wekyb3d8bbwe\\DynamicDependency.DataStore.exe",
+    "source": "program_files"
+  },
+  "pushnotificationslongrunningtask": {
+    "name": "PushNotificationsLongRunningTask",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftCorporationII.WinAppRuntime.Singleton_8000.731.1532.0_x64__8wekyb3d8bbwe\\PushNotificationsLongRunningTask.exe",
+    "source": "program_files"
+  },
+  "pushnotificationslongrunningtask.startuptask": {
+    "name": "PushNotificationsLongRunningTask.StartupTask",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftCorporationII.WinAppRuntime.Singleton_8000.731.1532.0_x64__8wekyb3d8bbwe\\PushNotificationsLongRunningTask.StartupTask.exe",
+    "source": "program_files"
+  },
+  "wsl": {
+    "name": "wsl",
+    "path": "C:\\Program Files\\WSL\\wsl.exe",
+    "source": "program_files"
+  },
+  "widgetboard": {
+    "name": "WidgetBoard",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.1202.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe",
+    "source": "program_files"
+  },
+  "crossdevicefileshost": {
+    "name": "CrossDeviceFilesHost",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.CrossDevice_1.25112.60.0_x64__cw5n1h2txyewy\\CrossDeviceFilesHost.exe",
+    "source": "program_files"
+  },
+  "crossdeviceservice": {
+    "name": "CrossDeviceService",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.CrossDevice_1.25112.60.0_x64__cw5n1h2txyewy\\CrossDeviceService.exe",
+    "source": "program_files"
+  },
+  "crossdevicesettingshost": {
+    "name": "CrossDeviceSettingsHost",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.CrossDevice_1.25112.60.0_x64__cw5n1h2txyewy\\CrossDeviceSettingsHost.exe",
+    "source": "program_files"
+  },
+  "crossdevicestreaminghost": {
+    "name": "CrossDeviceStreamingHost",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.CrossDevice_1.25112.60.0_x64__cw5n1h2txyewy\\CrossDeviceStreamingHost.exe",
+    "source": "program_files"
+  },
+  "phoneagentmcpserver": {
+    "name": "PhoneAgentMcpServer",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.CrossDevice_1.25112.60.0_x64__cw5n1h2txyewy\\PhoneAgentMcpServer.exe",
+    "source": "program_files"
+  },
+  "ms-teams": {
+    "name": "ms-teams",
+    "path": "C:\\Program Files\\WindowsApps\\msteams_25007.607.3371.8436_x64__8wekyb3d8bbwe\\ms-teams.exe",
+    "source": "program_files"
+  },
+  "msteams_autostarter": {
+    "name": "msteams_autostarter",
+    "path": "C:\\Program Files\\WindowsApps\\msteams_25007.607.3371.8436_x64__8wekyb3d8bbwe\\msteams_autostarter.exe",
+    "source": "program_files"
+  },
+  "nvcplui": {
+    "name": "nvcplui",
+    "path": "C:\\Program Files\\WindowsApps\\nvidiacorp.nvidiacontrolpanel_8.1.969.0_x64__56jybvy8sckqj\\nvcplui.exe",
+    "source": "program_files"
+  },
+  "nvgpuutilization": {
+    "name": "NvGpuUtilization",
+    "path": "C:\\Program Files\\WindowsApps\\nvidiacorp.nvidiacontrolpanel_8.1.969.0_x64__56jybvy8sckqj\\NvGpuUtilization.exe",
+    "source": "program_files"
+  },
+  "msal.wsl.proxy": {
+    "name": "msal.wsl.proxy",
+    "path": "C:\\Program Files\\WSL\\msal.wsl.proxy.exe",
+    "source": "program_files"
+  },
+  "msrdc": {
+    "name": "msrdc",
+    "path": "C:\\Program Files\\WSL\\msrdc.exe",
+    "source": "program_files"
+  },
+  "wslg": {
+    "name": "wslg",
+    "path": "C:\\Program Files\\WSL\\wslg.exe",
+    "source": "program_files"
+  },
+  "wslhost": {
+    "name": "wslhost",
+    "path": "C:\\Program Files\\WSL\\wslhost.exe",
+    "source": "program_files"
+  },
+  "wslrelay": {
+    "name": "wslrelay",
+    "path": "C:\\Program Files\\WSL\\wslrelay.exe",
+    "source": "program_files"
+  },
+  "wslservice": {
+    "name": "wslservice",
+    "path": "C:\\Program Files\\WSL\\wslservice.exe",
+    "source": "program_files"
+  },
+  "wslsettings": {
+    "name": "wslsettings",
+    "path": "C:\\Program Files\\WSL\\wslsettings\\wslsettings.exe",
+    "source": "program_files"
+  },
+  "amd_chipset_drivers": {
+    "name": "AMD_Chipset_Drivers",
+    "path": "C:\\Program Files (x86)\\AMD\\Chipset_Software\\AMD_Chipset_Drivers.exe",
+    "source": "program_files"
+  },
+  "armoury crate installer": {
+    "name": "Armoury Crate Installer",
+    "path": "C:\\Program Files (x86)\\ASUS\\AsusROGLSLService\\Armoury Crate Installer.exe",
+    "source": "program_files"
+  },
+  "asusroglslservice": {
+    "name": "AsusROGLSLService",
+    "path": "C:\\Program Files (x86)\\ASUS\\AsusROGLSLService\\AsusROGLSLService.exe",
+    "source": "program_files"
+  },
+  "aszip": {
+    "name": "AsZip",
+    "path": "C:\\Program Files (x86)\\ASUS\\AsusROGLSLService\\AsZip.exe",
+    "source": "program_files"
+  },
+  "checktool": {
+    "name": "CheckTool",
+    "path": "C:\\Program Files (x86)\\ASUS\\AsusROGLSLService\\CheckTool.exe",
+    "source": "program_files"
+  },
+  "queryuwp": {
+    "name": "QueryUWP",
+    "path": "C:\\Program Files (x86)\\ASUS\\AsusROGLSLService\\QueryUWP.exe",
+    "source": "program_files"
+  },
+  "beservice": {
+    "name": "BEService",
+    "path": "C:\\Program Files (x86)\\Common Files\\BattlEye\\BEService.exe",
+    "source": "program_files"
+  },
+  "beservice_arma3": {
+    "name": "BEService_arma3",
+    "path": "C:\\Program Files (x86)\\Common Files\\BattlEye\\BEService_arma3.exe",
+    "source": "program_files"
+  },
+  "beservice_dayz": {
+    "name": "BEService_dayz",
+    "path": "C:\\Program Files (x86)\\Common Files\\BattlEye\\BEService_dayz.exe",
+    "source": "program_files"
+  },
+  "drivers": {
+    "name": "drivers",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\drivers.exe",
+    "source": "program_files"
+  },
+  "secure_desktop_capture": {
+    "name": "secure_desktop_capture",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\secure_desktop_capture.exe",
+    "source": "program_files"
+  },
+  "steamerrorreporter": {
+    "name": "steamerrorreporter",
+    "path": "F:\\Program Files (x86)\\Steam\\steamerrorreporter.exe",
+    "source": "program_files"
+  },
+  "steamerrorreporter64": {
+    "name": "steamerrorreporter64",
+    "path": "F:\\Program Files (x86)\\Steam\\steamerrorreporter64.exe",
+    "source": "program_files"
+  },
+  "steamservice": {
+    "name": "SteamService",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\SteamService.exe",
+    "source": "program_files"
+  },
+  "steamxboxutil64": {
+    "name": "steamxboxutil64",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\steamxboxutil64.exe",
+    "source": "program_files"
+  },
+  "easyanticheat_eos": {
+    "name": "EasyAntiCheat_EOS",
+    "path": "C:\\Program Files (x86)\\EasyAntiCheat_EOS\\EasyAntiCheat_EOS.exe",
+    "source": "program_files"
+  },
+  "feedback": {
+    "name": "feedback",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\feedback.exe",
+    "source": "program_files"
+  },
+  "installcleanup": {
+    "name": "InstallCleanup",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\InstallCleanup.exe",
+    "source": "program_files"
+  },
+  "vsinstallerelevationservice": {
+    "name": "VSInstallerElevationService",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\VSInstallerElevationService.exe",
+    "source": "program_files"
+  },
+  "vswhere": {
+    "name": "vswhere",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe",
+    "source": "program_files"
+  },
+  "vs_installer": {
+    "name": "vs_installer",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vs_installer.exe",
+    "source": "program_files"
+  },
+  "vs_installer.windows": {
+    "name": "vs_installer.windows",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vs_installer.windows.exe",
+    "source": "program_files"
+  },
+  "vs_installershell": {
+    "name": "vs_installershell",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vs_installershell.exe",
+    "source": "program_files"
+  },
+  "vs_layout": {
+    "name": "vs_layout",
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vs_layout.exe",
+    "source": "program_files"
+  },
+  "oalinst": {
+    "name": "oalinst",
+    "path": "C:\\Program Files (x86)\\OpenAL\\oalinst.exe",
+    "source": "program_files"
+  },
+  "gameoverlayui": {
+    "name": "gameoverlayui",
+    "path": "F:\\Program Files (x86)\\Steam\\gameoverlayui.exe",
+    "source": "program_files"
+  },
+  "gameoverlayui64": {
+    "name": "gameoverlayui64",
+    "path": "F:\\Program Files (x86)\\Steam\\gameoverlayui64.exe",
+    "source": "program_files"
+  },
+  "steamsysinfo": {
+    "name": "steamsysinfo",
+    "path": "F:\\Program Files (x86)\\Steam\\steamsysinfo.exe",
+    "source": "program_files"
+  },
+  "streaming_client": {
+    "name": "streaming_client",
+    "path": "F:\\Program Files (x86)\\Steam\\streaming_client.exe",
+    "source": "program_files"
+  },
+  "writeminidump": {
+    "name": "WriteMiniDump",
+    "path": "F:\\Program Files (x86)\\Steam\\WriteMiniDump.exe",
+    "source": "program_files"
+  },
+  "fossilize-replay": {
+    "name": "fossilize-replay",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\fossilize-replay.exe",
+    "source": "program_files"
+  },
+  "fossilize-replay64": {
+    "name": "fossilize-replay64",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\fossilize-replay64.exe",
+    "source": "program_files"
+  },
+  "gldriverquery": {
+    "name": "gldriverquery",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\gldriverquery.exe",
+    "source": "program_files"
+  },
+  "gldriverquery64": {
+    "name": "gldriverquery64",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\gldriverquery64.exe",
+    "source": "program_files"
+  },
+  "steamxboxutil": {
+    "name": "steamxboxutil",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\steamxboxutil.exe",
+    "source": "program_files"
+  },
+  "steam_monitor": {
+    "name": "steam_monitor",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\steam_monitor.exe",
+    "source": "program_files"
+  },
+  "vulkandriverquery": {
+    "name": "vulkandriverquery",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\vulkandriverquery.exe",
+    "source": "program_files"
+  },
+  "vulkandriverquery64": {
+    "name": "vulkandriverquery64",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\vulkandriverquery64.exe",
+    "source": "program_files"
+  },
+  "x64launcher": {
+    "name": "x64launcher",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\x64launcher.exe",
+    "source": "program_files"
+  },
+  "x86launcher": {
+    "name": "x86launcher",
+    "path": "F:\\Program Files (x86)\\Steam\\bin\\x86launcher.exe",
+    "source": "program_files"
+  },
+  "battlefield 6": {
+    "name": "Battlefield 6",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\Battlefield 6\\bf6.exe",
+    "source": "games_folder"
+  },
+  "wallpaper_engine": {
+    "name": "wallpaper_engine",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\wallpaper_engine\\installer.exe",
+    "source": "games_folder"
+  },
+  "stalcraft": {
+    "name": "STALCRAFT",
+    "path": "F:\\Program Files (x86)\\Steam\\steamapps\\common\\STALCRAFT\\sclauncher.exe",
+    "source": "games_folder"
+  }
+}
