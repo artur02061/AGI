@@ -2,7 +2,7 @@
 Analyst Agent — анализ данных и веб-поиск
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any
 import json
 
 from core.agents.base_agent import BaseAgent

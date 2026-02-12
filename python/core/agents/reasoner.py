@@ -3,7 +3,6 @@ Reasoner Agent — логика и математические рассужде
 """
 
 from typing import Dict, Any
-import re
 
 from core.agents.base_agent import BaseAgent
 import config

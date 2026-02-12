@@ -212,13 +212,20 @@ class KnowledgeGraph:
             # NetworkX BFS
             neighbors = {}
             for d in range(1, depth + 1):
-                level_nodes = set()
                 try:
-                    for node in nx.single_source_shortest_path_length(self._graph, entity, cutoff=d):
-                        level_nodes.add(node)
+                    nodes_at_depth = {
+                        node for node, dist
+                        in nx.single_source_shortest_path_length(self._graph, entity, cutoff=d).items()
+                        if dist == d and node != entity
+                    }
                 except nx.NetworkXError:
-                    pass
-                neighbors[f"depth_{d}"] = self.query_entity(entity)
+                    nodes_at_depth = set()
+
+                # Собираем факты для найденных узлов
+                level_facts = []
+                for node in nodes_at_depth:
+                    level_facts.extend(self.query_entity(node, max_results=3))
+                neighbors[f"depth_{d}"] = level_facts
             return neighbors
 
         # Fallback: простой поиск

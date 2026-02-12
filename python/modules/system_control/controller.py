@@ -310,28 +310,37 @@ class SystemController:
         # GPU (если доступен)
         try:
             import pynvml
-            
-            pynvml.nvmlInit()
-            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-            
-            gpu_name = pynvml.nvmlDeviceGetName(handle)
-            if isinstance(gpu_name, bytes):
-                gpu_name = gpu_name.decode('utf-8')
-            
-            gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle)
-            gpu_mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
-            gpu_temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
-            
-            status["gpu"] = {
-                "name": gpu_name,
-                "usage_percent": gpu_util.gpu,
-                "memory_used_mb": gpu_mem.used // (1024 * 1024),
-                "memory_total_mb": gpu_mem.total // (1024 * 1024),
-                "memory_percent": (gpu_mem.used / gpu_mem.total) * 100,
-                "temperature_c": gpu_temp
-            }
-            
-            pynvml.nvmlShutdown()
+
+            # Используем nvmlInit/nvmlShutdown в паре для каждого вызова,
+            # т.к. VRAMManager может уже закрыть NVML к этому моменту
+            nvml_initialized = False
+            try:
+                pynvml.nvmlInit()
+                nvml_initialized = True
+            except pynvml.NVMLError:
+                pass
+
+            if nvml_initialized:
+                handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+
+                gpu_name = pynvml.nvmlDeviceGetName(handle)
+                if isinstance(gpu_name, bytes):
+                    gpu_name = gpu_name.decode('utf-8')
+
+                gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                gpu_mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                gpu_temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+
+                status["gpu"] = {
+                    "name": gpu_name,
+                    "usage_percent": gpu_util.gpu,
+                    "memory_used_mb": gpu_mem.used // (1024 * 1024),
+                    "memory_total_mb": gpu_mem.total // (1024 * 1024),
+                    "memory_percent": (gpu_mem.used / gpu_mem.total) * 100,
+                    "temperature_c": gpu_temp
+                }
+
+                pynvml.nvmlShutdown()
         
         except Exception as e:
             logger.debug(f"GPU недоступен: {e}")
@@ -395,7 +404,7 @@ class SystemController:
                 file_name = Path(file_path).name
                 result += f"{i}. {file_name} ({file_size:.1f} KB)\n"
                 result += f"   📂 {file_path}\n"
-            except:
+            except (OSError, ValueError):
                 result += f"{i}. {file_path}\n"
         
         logger.info(f"✅ Найдено {len(found_files)} файлов")

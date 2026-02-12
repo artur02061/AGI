@@ -149,7 +149,7 @@ class VectorMemory:
 
         embedding = self._get_embedding(text)
 
-        doc_id = f"dialogue_{self.doc_counter}"
+        doc_id = f"dialogue_{now.strftime('%Y%m%d_%H%M%S')}_{self.doc_counter}"
         self.doc_counter += 1
 
         try:

@@ -52,6 +52,9 @@ class ExecutorAgent(BaseAgent):
             }
         """
 
+        from datetime import datetime as _dt
+        _exec_start = _dt.now()
+
         tool_name = task.get("tool")
         args = task.get("args", [])
         user_input = task.get("user_input", "")
@@ -82,17 +85,20 @@ class ExecutorAgent(BaseAgent):
             else:
                 result = await tool(*args)
 
-            self._update_stats(True, 0.1)  # Быстрое выполнение
+            elapsed = (_dt.now() - _exec_start).total_seconds()
+            self._update_stats(True, elapsed)
 
             return str(result)
 
         except TypeError as e:
-            self._update_stats(False, 0.1)
+            elapsed = (_dt.now() - _exec_start).total_seconds()
+            self._update_stats(False, elapsed)
             self.logger.error(f"Несовпадение аргументов {tool_name}({args}): {e}")
             return f"ERROR: Неверные аргументы для {tool_name}: {e}"
 
         except Exception as e:
-            self._update_stats(False, 0.1)
+            elapsed = (_dt.now() - _exec_start).total_seconds()
+            self._update_stats(False, elapsed)
             self.logger.error(f"Ошибка выполнения {tool_name}: {e}")
             return f"ERROR: {str(e)}"
     

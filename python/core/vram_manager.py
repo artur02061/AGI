@@ -177,5 +177,5 @@ class VRAMManager:
         if self.nvml_initialized:
             try:
                 pynvml.nvmlShutdown()
-            except:
+            except Exception:
                 pass  # В __del__ нельзя логировать

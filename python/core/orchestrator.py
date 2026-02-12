@@ -128,7 +128,7 @@ class Orchestrator:
             elapsed = (datetime.now() - start_time).total_seconds()
             self.stats["successful_requests"] += 1
             self.stats["total_time"] += elapsed
-            self.stats["avg_time"] = self.stats["total_time"] / self.stats["total_requests"]
+            self.stats["avg_time"] = self.stats["total_time"] / self.stats["successful_requests"]
 
             # MetaCognition: записываем результат стратегии
             if hasattr(self, 'metacognition') and self.metacognition:

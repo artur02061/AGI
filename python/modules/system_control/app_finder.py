@@ -6,13 +6,13 @@ import asyncio
 import os
 import platform
 import json
-import logging
 from pathlib import Path
 from typing import List, Dict, Optional
 
 import config
+from utils.logging import get_logger
 
-logger = logging.getLogger("kristina.app_finder")
+logger = get_logger("app_finder")
 
 IS_WINDOWS = platform.system() == "Windows"
 
@@ -35,8 +35,11 @@ class AppFinder:
     def _load_cache(self) -> Dict:
         """Загружает кэш приложений"""
         if self.app_cache_file.exists():
-            with open(self.app_cache_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            try:
+                with open(self.app_cache_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                logger.warning(f"⚠️ Ошибка загрузки кэша приложений: {e}")
         return {}
 
     def _save_cache(self):
