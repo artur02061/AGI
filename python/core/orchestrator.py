@@ -192,10 +192,10 @@ class Orchestrator:
         v6.0: Строит задачу для агента, включая контекст памяти.
         """
         
-        # Executor
+        # Executor — передаём intent из плана директора как подсказку
         if agent_name == "executor":
             return {
-                "tool": None,
+                "tool": plan.get("intent"),
                 "args": [],
                 "user_input": user_input,
             }

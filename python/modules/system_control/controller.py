@@ -3,6 +3,7 @@
 """
 
 import subprocess
+import platform
 import psutil
 import os
 from pathlib import Path
@@ -13,6 +14,8 @@ from utils.logging import get_logger
 from utils.validators import validate_file_path, validate_process_name
 from modules.system_control.app_finder import AppFinder
 import config
+
+IS_WINDOWS = platform.system() == "Windows"
 
 logger = get_logger("system_controller")
 
@@ -58,7 +61,8 @@ class SystemController:
         
         # Проверяем, не запущено ли уже
         app_name_clean = Path(app['path']).stem
-        if self._is_running(app_name_clean + '.exe'):
+        process_name = app_name_clean + '.exe' if IS_WINDOWS else app_name_clean
+        if self._is_running(process_name):
             logger.info(f"Приложение уже запущено: {app['name']}")
             return {
                 "success": True,
@@ -265,7 +269,7 @@ class SystemController:
         memory = psutil.virtual_memory()
         
         # Диск
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage('C:/' if IS_WINDOWS else '/')
         
         status = {
             "cpu": {
@@ -345,11 +349,14 @@ class SystemController:
                 str(Path.home() / "Downloads"),
             ]
             
-            # Все доступные диски
-            for drive in "CDEFGH":
-                drive_path = f"{drive}:/"
-                if Path(drive_path).exists():
-                    search_paths.append(drive_path)
+            # Все доступные диски / корневые каталоги
+            if IS_WINDOWS:
+                for drive in "CDEFGH":
+                    drive_path = f"{drive}:/"
+                    if Path(drive_path).exists():
+                        search_paths.append(drive_path)
+            else:
+                search_paths.append(str(Path.home()))
         
         found_files = []
         
@@ -446,8 +453,12 @@ class SystemController:
             }
         
         try:
-            import os
-            os.startfile(path)
+            if IS_WINDOWS:
+                os.startfile(path)
+            elif platform.system() == "Darwin":
+                subprocess.Popen(["open", str(path)])
+            else:
+                subprocess.Popen(["xdg-open", str(path)])
             
             logger.info(f"✅ Файл открыт: {path.name}")
             

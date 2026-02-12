@@ -64,6 +64,8 @@ class AgentCore:
         """Обрабатывает запрос пользователя"""
 
         self.stats["total_queries"] += 1
+        self._request_tool_calls = 0
+        self._request_errors = 0
         logger.info(f"Запрос: {user_input[:50]}...")
 
         self._current_query = user_input
@@ -160,11 +162,13 @@ class AgentCore:
 
                     tool_call_count += 1
                     self.stats["total_tool_calls"] += 1
+                    self._request_tool_calls += 1
 
                     # Проверка ошибок
                     if "ERROR" in str(result):
                         error_count += 1
                         self.stats["total_errors"] += 1
+                        self._request_errors += 1
 
                         if error_count >= config.AGENT_MAX_ERRORS:
                             logger.warning(f"⚠️ Лимит ошибок ({config.AGENT_MAX_ERRORS})")
@@ -307,11 +311,25 @@ class AgentCore:
                 "⚠️ КРИТИЧЕСКИ ВАЖНО: ОТВЕЧАЙ ТОЛЬКО НА РУССКОМ ЯЗЫКЕ!\n"
             )
 
+        # Self-awareness narrative (2.5)
+        awareness_str = ""
+        if hasattr(self, 'self_awareness') and self.self_awareness:
+            narrative = self.self_awareness.get_narrative_summary()
+            if narrative:
+                awareness_str = f"\n{narrative}"
+
+        # VAD emotional style
+        vad_str = ""
+        if hasattr(self, 'vad_emotions') and self.vad_emotions:
+            style = self.vad_emotions.get_response_style()
+            vad_str = f"\nТон: {style.get('tone', 'neutral')} | Эмоция: {style.get('emotional_label', 'нейтрально')}"
+
         prompt = f"""{russian_instruction}Ты — Кристина, AI-ассистент.
 
 {thread_str}
 
 {memory_context}
+{awareness_str}
 
 ПРАВИЛА:
 1. Отвечай ТОЛЬКО на русском
@@ -320,7 +338,7 @@ class AgentCore:
 4. Для файлов используй ПОЛНЫЕ пути
 5. Отвечай кратко и по делу (3-5 предложений)
 
-Настроение: {self.identity.current_mood} | Энергия: {self.identity.energy_level}%
+Настроение: {self.identity.current_mood} | Энергия: {self.identity.energy_level}%{vad_str}
 """
 
         return prompt
@@ -426,10 +444,10 @@ class AgentCore:
                 del self.response_cache[key]
 
     def _save_to_vector_memory(self, user_input: str, response: str):
-        importance = min(3, 1 + self.stats["total_tool_calls"])
+        importance = min(3, 1 + self._request_tool_calls)
         metadata = {
-            'tool_calls': self.stats["total_tool_calls"],
-            'had_errors': self.stats["total_errors"] > 0,
+            'tool_calls': self._request_tool_calls,
+            'had_errors': self._request_errors > 0,
         }
         if self.thread_memory.current_thread:
             metadata['thread'] = self.thread_memory.current_thread['topic']

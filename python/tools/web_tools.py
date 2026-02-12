@@ -174,45 +174,46 @@ class WebFetchTool(BaseTool):
             return f"❌ {reason}"
         
         try:
-            import requests
+            import httpx
             from bs4 import BeautifulSoup
-            
-            # Запрос
-            response = requests.get(
-                url,
-                timeout=config.WEB_REQUEST_TIMEOUT,
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            )
-            
+
+            # Async запрос
+            async with httpx.AsyncClient(follow_redirects=True) as client:
+                response = await client.get(
+                    url,
+                    timeout=config.WEB_REQUEST_TIMEOUT,
+                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+                )
+
             response.raise_for_status()
-            
+
             # Парсинг
             soup = BeautifulSoup(response.content, 'html.parser')
-            
+
             # Убираем мусор
             for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
                 tag.decompose()
-            
+
             # Извлекаем текст
             text = soup.get_text(separator='\n', strip=True)
-            
+
             # Чистим пустые строки
             lines = [line for line in text.split('\n') if line.strip()]
             text = '\n'.join(lines)
-            
+
             # Ограничиваем размер
             max_size = config.WEB_FETCH_MAX_SIZE
             if len(text) > max_size:
                 text = text[:max_size] + f"\n\n[...текст обрезан, полный размер: {len(text)} символов]"
-            
+
             logger.info(f"✅ Страница прочитана ({len(text)} символов)")
-            
+
             return text
-        
-        except requests.RequestException as e:
+
+        except httpx.HTTPStatusError as e:
             logger.error(f"❌ Ошибка запроса: {e}")
             return f"❌ Ошибка загрузки страницы: {e}"
-        
+
         except Exception as e:
             logger.error(f"❌ Ошибка обработки: {e}")
             return f"❌ Ошибка обработки страницы: {e}"
@@ -240,13 +241,14 @@ class GetWeatherTool(BaseTool):
     
     async def execute(self, city: str = "Moscow") -> str:
         logger.info(f"🌤️ Получение погоды: {city}")
-        
+
         try:
-            import requests
-            
+            import httpx
+
             url = f"https://wttr.in/{city}?format=j1&lang=ru"
-            
-            response = requests.get(url, timeout=5)
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, timeout=5)
             response.raise_for_status()
             
             data = response.json()
@@ -294,14 +296,15 @@ class GetCurrencyRateTool(BaseTool):
     
     async def execute(self, currency: str = "USD") -> str:
         logger.info(f"💱 Получение курса: {currency}")
-        
+
         try:
-            import requests
-            
+            import httpx
+
             # API ЦБ РФ (JSON вместо XML)
             url = "https://www.cbr-xml-daily.ru/daily_json.js"
-            
-            response = requests.get(url, timeout=5)
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, timeout=5)
             response.raise_for_status()
             
             data = response.json()

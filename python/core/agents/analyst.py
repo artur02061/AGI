@@ -110,70 +110,10 @@ class AnalystAgent(BaseAgent):
         
         elif task_type == "data_analysis":
             # Анализ данных
-            data = task.get("data", "")
-            return await self._analyze_data(data)
+            return await self._analyze_data(task)
         
         else:
             return f"ERROR: Неизвестный тип задачи: {task_type}"
-    
-    async def _web_search_and_analyze(self, task: Dict) -> str:
-        """Поиск в вебе + анализ результатов"""
-        
-        query = task.get("query", "")
-        max_results = task.get("max_results", 3)
-        
-        if not query:
-            return "ERROR: Не указан поисковый запрос"
-        
-        try:
-            # Шаг 1: Веб-поиск
-            self.logger.info(f"🔍 Поиск: {query}")
-            
-            search_tool = self.tools.get("web_search")
-            if not search_tool:
-                return "ERROR: Инструмент web_search недоступен"
-            
-            search_results = await search_tool(query)
-            
-            # Шаг 2: Анализ результатов
-            self.logger.info("📊 Анализ результатов...")
-            
-            prompt = f"""Проанализируй результаты веб-поиска и извлеки ключевую информацию.
-
-Запрос пользователя: "{query}"
-
-Результаты поиска:
-{search_results[:2000]}
-
-ЗАДАЧА:
-1. Извлеки самую важную информацию по запросу
-2. Суммируй в 3-5 предложениях
-3. Укажи источники (если есть URLs)
-4. Отвечай на русском языке
-
-Формат ответа:
-[Краткое резюме информации]
-
-Источники: [URLs если есть]"""
-            
-            messages = [
-                {
-                    "role": "system",
-                    "content": "Ты аналитик, который извлекает и суммирует информацию из веб-результатов."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-            
-            analysis = await self._call_model(messages, temperature=0.5, max_tokens=500)
-            
-            return analysis.strip()
-        
-        except Exception as e:
-            self.logger.error(f"Ошибка веб-анализа: {e}")
-            return f"ERROR: {str(e)}"
     
     async def _analyze_data(self, task: Dict) -> str:
         """Анализирует структурированные данные"""
