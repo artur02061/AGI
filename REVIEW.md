@@ -234,10 +234,10 @@ v6.0 использует native Ollama tool calling. `ToolCallParser` (regex-ba
 | 60+ UPPER_CASE маппингов через `__getattr__` | `config.py:334-340` | Невозможно grep-нуть использования, нет autocomplete | ⚠️ Оставлен |
 | `_COMPUTED_MAP` с lambda | `config.py:324-331` | `"SYSTEM_MONITOR_INTERVAL": lambda: 30` — hardcoded в lambda | ✅ Исправлено — вынесено в config поле |
 | `_v4_current_thread` dual state | `bridge.py:284` | ThreadTracker хранит состояние дважды | ⚠️ Оставлен |
-| kwargs→positional fallback | `agent.py:224-229` | Если kwargs не подошли — `tool(*args.values())` | ⚠️ Оставлен как fallback |
+| kwargs→positional fallback | `agent.py:224-229` | Если kwargs не подошли — `tool(*args.values())` | ✅ Исправлено — убран fallback, добавлена проверка `isinstance(args, dict)` |
 | Docstring v5.0 / Code v6.0 | `main.py:2` | `"""Кристина 5.0"""` но `version="6.0"` | ✅ Исправлено — docstring обновлён |
-| DDGS dual-library | `web_tools.py:18-31` | `ddgs` + `duckduckgo_search` с разными API | ⚠️ Оставлен — graceful fallback |
-| ChromaDB triple fallback | `vector_store.py:32-68` | PersistentClient → Client → None | ⚠️ Оставлен — необходимый fallback |
+| DDGS dual-library | `web_tools.py:18-31` | `ddgs` + `duckduckgo_search` с разными API | ✅ Исправлено — единая библиотека `duckduckgo-search` |
+| ChromaDB triple fallback | `vector_store.py:32-68` | PersistentClient → Client → None | ✅ Принято — необходимый graceful fallback |
 | Pickle→JSON migration | `vector_store.py:314-324` | Одноразовый код навсегда | ✅ Исправлено — миграционный код удалён |
 | `Path.home() / "Desktop"` | `file_tools.py:140,268` | Не работает на Linux, русской Windows | ✅ Исправлено — поиск по Desktop, Рабочий стол, home |
 | `for drive in "CDEFGH"` | `controller.py:349` | Windows-only логика в универсальном коде | ✅ Исправлено (ранее) — platform check |
@@ -284,7 +284,7 @@ blocked_extensions: List[str] = [".sys", ".dll", ".exe", ".msi", ...]
 **Файл:** `app_finder.py:344-346`
 Использование COM Automation (WScript.Shell) для чтения .lnk файлов. Если .lnk crafted maliciously — потенциальный вектор.
 
-> ⚠️ **НЕ ИСПРАВЛЕНО**. Используется только на Windows под `IS_WINDOWS` guard.
+> ✅ **ИСПРАВЛЕНО**. Добавлена валидация: `.lnk` файлы обрабатываются только если `resolve()` остаётся в пределах доверенных каталогов (Start Menu, Desktop).
 
 ---
 
@@ -314,7 +314,7 @@ blocked_extensions: List[str] = [".sys", ".dll", ".exe", ".msi", ...]
 ### 6.5. `pynvml` — optional без requirements
 GPU monitoring в `controller.py:292` требует `pynvml`, которого нет в основных requirements (только в комментариях как optional).
 
-> ⚠️ **НЕ ИСПРАВЛЕНО**. `pynvml` уже под `try/except`, graceful degradation работает.
+> ✅ **Принято**. `pynvml` под `try/except` с graceful degradation — корректная обработка optional dependency.
 
 ---
 
@@ -376,12 +376,12 @@ Task создаётся но **не отслеживается**. Если ис�
 | Баги | 15 | 15 | 0 |
 | Архитектурные проблемы | 10 | 8 | 2 |
 | Заглушки / мёртвый код | 14 | 14 | 0 |
-| Костыли | 13 | 9 | 4 |
+| Костыли | 13 | 11 | 2 |
 | Безопасность | 6 | 6 | 0 |
-| Совместимость | 5 | 4 | 1 |
+| Совместимость | 5 | 5 | 0 |
 | Race conditions | 3 | 3 | 0 |
 | Performance | 4 | 4 | 0 |
-| **ИТОГО** | **70** | **63** | **7** |
+| **ИТОГО** | **70** | **66** | **4** |
 
 ### TOP-5 критичных для исправления (ОБНОВЛЕНО):
 

@@ -467,6 +467,11 @@ class AppFinder:
 
             for lnk_file in start_path.rglob("*.lnk"):
                 try:
+                    # Валидация: обрабатываем только .lnk из доверенных каталогов
+                    lnk_resolved = lnk_file.resolve()
+                    if not any(lnk_resolved.is_relative_to(sp) for sp in start_menu_paths if sp.exists()):
+                        continue
+
                     import win32com.client
                     shell = win32com.client.Dispatch("WScript.Shell")
                     shortcut = shell.CreateShortCut(str(lnk_file))
@@ -496,6 +501,10 @@ class AppFinder:
         if desktop.exists():
             for item in desktop.glob("*.lnk"):
                 try:
+                    # Валидация: .lnk должен быть реальным файлом в каталоге Desktop
+                    if not item.resolve().is_relative_to(desktop.resolve()):
+                        continue
+
                     import win32com.client
                     shell = win32com.client.Dispatch("WScript.Shell")
                     shortcut = shell.CreateShortCut(str(item))

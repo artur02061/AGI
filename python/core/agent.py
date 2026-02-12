@@ -222,19 +222,14 @@ class AgentCore:
         tool_func = self.tools[name]
 
         try:
-            # Ollama передаёт args как dict → разворачиваем в kwargs
-            result = await tool_func(**args)
+            # Ollama native tool calling передаёт args как dict → kwargs
+            if isinstance(args, dict):
+                result = await tool_func(**args)
+            else:
+                result = await tool_func(*args)
             return str(result)
-        except TypeError as e:
-            # Несовпадение аргументов — пробуем positional
-            logger.warning(f"kwargs failed for {name}: {e}, trying positional")
-            try:
-                result = await tool_func(*args.values())
-                return str(result)
-            except Exception as e2:
-                return f"ERROR: Неверные аргументы для {name}: {e2}"
         except Exception as e:
-            logger.error(f"Ошибка {name}: {e}", exc_info=True)
+            logger.error(f"Tool error {name}(args={args}): {e}", exc_info=True)
             return f"ERROR: {e}"
 
     # ═══════════════════════════════════════════════════════════
