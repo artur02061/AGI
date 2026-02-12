@@ -91,22 +91,32 @@ class Orchestrator:
             # === ШАГ 2: ДИРЕКТОР АНАЛИЗИРУЕТ ===
             logger.info("🧠 Директор анализирует запрос...")
             plan = await self.director.analyze_request(user_input, context)
-            
+
             logger.info(f"📋 План: {plan['primary_agent']} + {plan['supporting_agents']}")
-            
-            # === ШАГ 3: ЗАГРУЖАЕМ АГЕНТОВ ===
-            required_agents = [plan["primary_agent"]] + plan.get("supporting_agents", [])
-            await self.vram_manager.ensure_loaded(required_agents)
-            
-            # === ШАГ 4: ВЫПОЛНЕНИЕ (v6.0: передаём context!) ===
-            results = await self._execute_plan(plan, user_input, context)
-            
-            # === ШАГ 5: СИНТЕЗ (v6.0: передаём context!) ===
-            logger.info("🎨 Директор синтезирует ответ...")
-            
-            final_response = await self.director.synthesize_response(
-                user_input, plan, results, context=context
-            )
+
+            # === FAST PATH: простые диалоговые запросы (1 LLM вызов вместо 3) ===
+            if (plan["primary_agent"] == "director"
+                    and plan.get("complexity") == "simple"
+                    and not plan.get("supporting_agents")):
+                logger.info("⚡ Fast path: простой запрос → director напрямую")
+                final_response = await self.director.execute(
+                    {"tool": None, "args": [], "user_input": user_input},
+                    context=context,
+                )
+            else:
+                # === ШАГ 3: ЗАГРУЖАЕМ АГЕНТОВ ===
+                required_agents = [plan["primary_agent"]] + plan.get("supporting_agents", [])
+                await self.vram_manager.ensure_loaded(required_agents)
+
+                # === ШАГ 4: ВЫПОЛНЕНИЕ (v6.0: передаём context!) ===
+                results = await self._execute_plan(plan, user_input, context)
+
+                # === ШАГ 5: СИНТЕЗ (v6.0: передаём context!) ===
+                logger.info("🎨 Директор синтезирует ответ...")
+
+                final_response = await self.director.synthesize_response(
+                    user_input, plan, results, context=context
+                )
             
             # === ШАГ 6: СОХРАНЕНИЕ ===
             self._save_to_memory(user_input, final_response, plan)

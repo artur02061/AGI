@@ -285,30 +285,34 @@ class ContextCompressorAdapter:
 # ═══════════════════════════════════════════════════════════════
 
 class ThreadTrackerAdapter:
+    """Адаптер для ThreadTracker — единый источник правды через _tracker.
+
+    Сообщения (messages) хранятся отдельно в _messages, т.к. underlying
+    tracker не предоставляет API для истории сообщений в формате v4.
+    """
+
     def __init__(self, timeout_secs=600):
         self._tracker = _RustThreadTracker(timeout_secs)
-        self._v4_current_thread = None
+        self._messages: list = []  # история сообщений текущей нити
+        self._entities: list = []  # entities текущей нити
         self._lock = threading.Lock()
 
     @property
     def current_thread(self):
+        """Возвращает текущую нить как dict (v4 API)."""
         with self._lock:
-            topic = None
-            if hasattr(self._tracker, 'get_current_topic'):
-                topic = self._tracker.get_current_topic()
+            topic = self._tracker.get_current_topic() if hasattr(self._tracker, 'get_current_topic') else None
             if topic:
-                if self._v4_current_thread is None or self._v4_current_thread.get("topic") != topic:
-                    self._v4_current_thread = {"topic": topic, "entities": [], "messages": []}
-                return self._v4_current_thread
+                return {"topic": topic, "entities": self._entities, "messages": self._messages}
             if hasattr(self._tracker, 'current_thread') and self._tracker.current_thread:
                 return self._tracker.current_thread
-            return self._v4_current_thread
+            return None
 
     def start_thread(self, topic, entities=None):
-        entities = entities or []
         with self._lock:
-            self._tracker.start_thread(topic, entities)
-            self._v4_current_thread = {"topic": topic, "entities": entities, "messages": []}
+            self._tracker.start_thread(topic, entities or [])
+            self._entities = entities or []
+            self._messages = []
 
     def add_to_thread(self, user_input, response):
         self.add_message(user_input, response)
@@ -317,17 +321,12 @@ class ThreadTrackerAdapter:
         with self._lock:
             if hasattr(self._tracker, 'add_message'):
                 self._tracker.add_message(user_input, response)
-            if self._v4_current_thread is not None:
-                self._v4_current_thread["messages"].append({"user": user_input, "assistant": response})
+            self._messages.append({"user": user_input, "assistant": response})
 
     def update(self, user_input, response):
         with self._lock:
             self._tracker.update(user_input, response)
-            topic = self._tracker.get_current_topic() if hasattr(self._tracker, 'get_current_topic') else None
-            if topic and self._v4_current_thread is None:
-                self._v4_current_thread = {"topic": topic, "entities": [], "messages": []}
-            if self._v4_current_thread:
-                self._v4_current_thread.setdefault("messages", []).append({"user": user_input, "assistant": response})
+            self._messages.append({"user": user_input, "assistant": response})
 
     def is_related(self, text): return self._tracker.is_related(text)
 
@@ -343,12 +342,12 @@ class ThreadTrackerAdapter:
     def get_current_topic(self):
         if hasattr(self._tracker, 'get_current_topic'):
             return self._tracker.get_current_topic()
-        return self._v4_current_thread.get("topic") if self._v4_current_thread else None
+        return None
 
     def has_active_thread(self):
         if hasattr(self._tracker, 'has_active_thread'):
             return self._tracker.has_active_thread()
-        return self._v4_current_thread is not None
+        return bool(self._messages)
 
     def get_past_threads(self, limit=5):
         return self._tracker.get_past_threads(limit) if hasattr(self._tracker, 'get_past_threads') else []
@@ -356,12 +355,13 @@ class ThreadTrackerAdapter:
     def end_thread(self):
         if hasattr(self._tracker, 'end_thread'):
             self._tracker.end_thread()
-        self._v4_current_thread = None
+        self._messages = []
+        self._entities = []
 
     def get_stats(self):
         if hasattr(self._tracker, 'get_stats'):
             return self._tracker.get_stats()
-        return {"current_thread": self._v4_current_thread is not None}
+        return {"current_thread": bool(self._messages)}
 
     def save(self):
         """Сохраняет историю нитей"""

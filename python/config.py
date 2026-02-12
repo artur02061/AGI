@@ -338,8 +338,16 @@ _COMPUTED_MAP = {
 }
 
 
+# Экспортируемые имена для IDE autocomplete и grep
+__all__ = ["config"] + list(_COMPAT_MAP.keys()) + list(_COMPUTED_MAP.keys())
+
+
 def __getattr__(name):
-    """Ленивый доступ к глобальным переменным через config"""
+    """Ленивый доступ к UPPER_CASE переменным через config.lower_case.
+
+    Маппинг задан в _COMPAT_MAP и _COMPUTED_MAP выше.
+    Пример: config.MODEL → config.config.model
+    """
     if name in _COMPAT_MAP:
         return getattr(config, _COMPAT_MAP[name])
     if name in _COMPUTED_MAP:
