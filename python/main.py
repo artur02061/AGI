@@ -13,20 +13,11 @@ from pathlib import Path
 # Добавляем корневую директорию
 sys.path.insert(0, str(Path(__file__).parent))
 
-import structlog
 from config import config
+from utils.logging import get_logger
 
-# ── Structured logging ──
-structlog.configure(
-    processors=[
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.add_log_level,
-        structlog.dev.ConsoleRenderer(colors=True),
-    ],
-    wrapper_class=structlog.BoundLogger,
-    logger_factory=structlog.PrintLoggerFactory(),
-)
-log = structlog.get_logger("kristina")
+# ── Единое логирование через utils/logging ──
+log = get_logger("main")
 
 # ── Rust/Python bridge ──
 from bridge import (
@@ -49,7 +40,7 @@ class GracefulShutdown:
 
     def _handle(self, signum, frame):
         name = "SIGINT" if signum == signal.SIGINT else "SIGTERM"
-        log.info("shutdown_signal", signal=name)
+        log.info(f"Shutdown signal: {name}")
         self.should_exit = True
 
 
@@ -60,16 +51,16 @@ class GracefulShutdown:
 async def initialize_system():
     """Инициализирует все компоненты"""
 
-    log.info("system_init", version="6.0", rust_core=RUST_AVAILABLE)
+    log.info(f"system_init: version=6.0, rust_core={RUST_AVAILABLE}")
 
     # ── Health check: Ollama ──
     try:
         from ollama import AsyncClient
         client = AsyncClient()
         await client.list()
-        log.info("ollama_connected")
+        log.info("Ollama connected")
     except Exception as e:
-        log.error("ollama_unavailable", error=str(e))
+        log.error(f"Ollama unavailable: {e}")
         print(f"\n❌ Ollama недоступна: {e}")
         print("   Запусти Ollama: ollama serve")
         sys.exit(1)
@@ -80,15 +71,13 @@ async def initialize_system():
         working_size=config.working_memory_size,
         max_episodic=config.max_episodic_memory,
     )
-    log.info("component_ready", name="MemoryEngine", backend="rust" if RUST_AVAILABLE else "python")
+    log.info(f"MemoryEngine ready (backend={'rust' if RUST_AVAILABLE else 'python'})")
 
     embedding_cache = EmbeddingCache(
         str(config.data_dir),
         max_size=config.embedding_cache_max_size,
     )
-    log.info("component_ready", name="EmbeddingCache",
-             size=embedding_cache.len(),
-             backend="rust" if RUST_AVAILABLE else "python")
+    log.info(f"EmbeddingCache ready (size={embedding_cache.len()}, backend={'rust' if RUST_AVAILABLE else 'python'})")
 
     thread_tracker = ThreadTracker(timeout_secs=config.thread_timeout_seconds)
 
@@ -100,7 +89,7 @@ async def initialize_system():
     vad_emotions = VADEmotionalEngine()
     metacognition = MetaCognition()
     self_awareness = SelfAwareness()
-    log.info("component_ready", name="VAD+MetaCog+SelfAwareness", source="consciousness+sigma")
+    log.info("VAD+MetaCog+SelfAwareness ready")
 
     # ── Python компоненты (I/O-bound, Rust не нужен) ──
     from core.identity import IdentityEngine
@@ -157,7 +146,7 @@ async def initialize_system():
         t = cls(memory) if cls == RecallMemoryTool else cls(vector_memory)
         tools[t.schema.name] = t.execute
 
-    log.info("tools_registered", count=len(tools))
+    log.info(f"Tools registered: {len(tools)}")
 
     # ── Агент / Оркестратор ──
     vram_manager = None
@@ -175,7 +164,7 @@ async def initialize_system():
 
         vram_manager = getattr(agent, 'vram_manager', None)
 
-        log.info("orchestrator_ready", agents=4)
+        log.info("Orchestrator ready (4 agents)")
     else:
         from core.agent import AgentCore
         agent = AgentCore(
@@ -191,7 +180,7 @@ async def initialize_system():
     agent.self_awareness = self_awareness
     agent.metacognition = metacognition
 
-    log.info("system_ready")
+    log.info("System ready")
 
     return {
         "agent": agent,
@@ -266,7 +255,7 @@ async def process_input(user_input: str, components: dict) -> str:
     try:
         response = await components["agent"].process(text)
     except Exception as exc:
-        log.error("process_error", error=str(exc), exc_info=True)
+        log.error(f"Process error: {exc}", exc_info=True)
         response = f"Произошла ошибка: {exc}"
         had_errors = True
 
@@ -328,11 +317,11 @@ async def main():
             except EOFError:
                 break
             except Exception as exc:
-                log.error("main_loop_error", error=str(exc))
+                log.error(f"Main loop error: {exc}")
                 print(f"❌ Ошибка: {exc}\n")
 
     finally:
-        log.info("shutdown_start")
+        log.info("Shutdown started")
 
         # Сохранение
         components["memory"].save()
@@ -349,7 +338,7 @@ async def main():
         if components["vram_manager"]:
             components["vram_manager"].cleanup()
 
-        log.info("shutdown_complete")
+        log.info("Shutdown complete")
         print("\n💭 До встречи!")
 
 
@@ -361,11 +350,11 @@ if __name__ == "__main__":
         try:
             import uvloop
             uvloop.install()
-            log.info("uvloop_installed")
+            log.info("uvloop installed")
         except ImportError:
             pass
     else:
-        log.info("platform", os="Windows", event_loop="standard asyncio")
+        log.info("Platform: Windows, event_loop=standard asyncio")
 
     try:
         asyncio.run(main())
