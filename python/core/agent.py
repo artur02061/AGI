@@ -64,6 +64,8 @@ class AgentCore:
         """Обрабатывает запрос пользователя"""
 
         self.stats["total_queries"] += 1
+        self._request_tool_calls = 0
+        self._request_errors = 0
         logger.info(f"Запрос: {user_input[:50]}...")
 
         self._current_query = user_input
@@ -160,11 +162,13 @@ class AgentCore:
 
                     tool_call_count += 1
                     self.stats["total_tool_calls"] += 1
+                    self._request_tool_calls += 1
 
                     # Проверка ошибок
                     if "ERROR" in str(result):
                         error_count += 1
                         self.stats["total_errors"] += 1
+                        self._request_errors += 1
 
                         if error_count >= config.AGENT_MAX_ERRORS:
                             logger.warning(f"⚠️ Лимит ошибок ({config.AGENT_MAX_ERRORS})")
@@ -426,10 +430,10 @@ class AgentCore:
                 del self.response_cache[key]
 
     def _save_to_vector_memory(self, user_input: str, response: str):
-        importance = min(3, 1 + self.stats["total_tool_calls"])
+        importance = min(3, 1 + self._request_tool_calls)
         metadata = {
-            'tool_calls': self.stats["total_tool_calls"],
-            'had_errors': self.stats["total_errors"] > 0,
+            'tool_calls': self._request_tool_calls,
+            'had_errors': self._request_errors > 0,
         }
         if self.thread_memory.current_thread:
             metadata['thread'] = self.thread_memory.current_thread['topic']

@@ -43,46 +43,63 @@ class ExecutorAgent(BaseAgent):
     async def execute(self, task: Dict[str, Any]) -> str:
         """
         Выполняет задачу напрямую через инструменты
-        
+
         Args:
             task: {
                 "tool": "delete_file",
-                "args": ["filename.txt"],
+                "args": {"filepath": "filename.txt"} или ["filename.txt"],
                 "user_input": "оригинальный запрос" (опционально)
             }
         """
-        
+
         tool_name = task.get("tool")
         args = task.get("args", [])
         user_input = task.get("user_input", "")
-        
+
         # Если tool не указан, пытаемся определить из user_input
         if not tool_name and user_input:
             detected = self._detect_tool_from_input(user_input)
             if detected:
                 tool_name = detected["tool"]
                 args = detected["args"]
-        
+
         if not tool_name:
             return "ERROR: Не указан инструмент для выполнения"
-        
+
         if tool_name not in self.tools:
             return f"ERROR: Инструмент {tool_name} недоступен"
-        
+
         if tool_name not in self.capabilities:
             return f"ERROR: Я не умею выполнять {tool_name}"
-        
+
         try:
             self.logger.info(f"⚡ Выполнение: {tool_name}({args})")
-            
+
             # Прямой вызов инструмента
             tool = self.tools[tool_name]
-            result = await tool(*args)
-            
+            if isinstance(args, dict):
+                result = await tool(**args)
+            else:
+                result = await tool(*args)
+
             self._update_stats(True, 0.1)  # Быстрое выполнение
-            
+
             return str(result)
-        
+
+        except TypeError as e:
+            # Несовпадение аргументов — пробуем альтернативный вызов
+            try:
+                if isinstance(args, dict):
+                    result = await tool(*args.values())
+                else:
+                    result = await tool(**{f"arg{i}": v for i, v in enumerate(args)})
+                self._update_stats(True, 0.1)
+                return str(result)
+            except Exception as e2:
+                self._update_stats(False, 0.1)
+                self.logger.error(f"Ошибка аргументов {tool_name}: {e2}")
+                return f"ERROR: Неверные аргументы для {tool_name}: {e}"
+
         except Exception as e:
             self._update_stats(False, 0.1)
             self.logger.error(f"Ошибка выполнения {tool_name}: {e}")

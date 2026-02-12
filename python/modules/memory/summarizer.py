@@ -205,7 +205,7 @@ class MemorySummarizer:
                 try:
                     w = int(week_key.split("W")[1])
                     # Примерная проверка принадлежности к месяцу
-                    dt = datetime.strptime(f"{year}-W{w:02d}-1", "%Y-W%W-%w")
+                    dt = datetime.strptime(f"{year}-W{w:02d}-1", "%G-W%V-%u")
                     if dt.month == month:
                         weekly_summaries.append((week_key, summary))
                 except (ValueError, IndexError):
@@ -343,7 +343,7 @@ class MemorySummarizer:
             try:
                 parts = wk.split("-W")
                 year, week_num = int(parts[0]), int(parts[1])
-                dt = datetime.strptime(f"{year}-W{week_num:02d}-1", "%Y-W%W-%w")
+                dt = datetime.strptime(f"{year}-W{week_num:02d}-1", "%G-W%V-%u")
                 if dt < cutoff_weeks:
                     old_weeklies.append((year, dt.month))
             except (ValueError, IndexError):

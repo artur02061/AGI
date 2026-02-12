@@ -107,13 +107,13 @@ class MemorySystem:
         # v6.0: Извлекаем факты в Knowledge Graph (асинхронно, fire-and-forget)
         if self.knowledge_graph and importance >= config.config.knowledge_graph_min_importance:
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
+                try:
+                    asyncio.get_running_loop()
                     asyncio.create_task(
                         self.knowledge_graph.extract_and_add(user_input, response, importance)
                     )
-                else:
-                    # Regex-извлечение синхронно
+                except RuntimeError:
+                    # No running loop — sync fallback
                     triples = self.knowledge_graph._regex_extract(user_input)
                     for s, p, o in triples:
                         self.knowledge_graph.add_triple(s, p, o, importance, "regex")
@@ -211,11 +211,8 @@ class MemorySystem:
             # v6.0: Auto-summarize
             if self.summarizer and config.config.memory_summarize_enabled:
                 try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        asyncio.create_task(self._auto_summarize())
-                    else:
-                        asyncio.run(self._auto_summarize())
+                    asyncio.get_running_loop()
+                    asyncio.create_task(self._auto_summarize())
                 except RuntimeError:
                     # Нет event loop — пропускаем
                     pass

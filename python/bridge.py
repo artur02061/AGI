@@ -126,12 +126,13 @@ class MemoryAdapter:
         if self.knowledge_graph and importance >= 2:
             try:
                 import asyncio
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
+                try:
+                    loop = asyncio.get_running_loop()
                     asyncio.create_task(
                         self.knowledge_graph.extract_and_add(user_input, response, importance)
                     )
-                else:
+                except RuntimeError:
+                    # No running loop — use sync fallback
                     for s, p, o in self.knowledge_graph._regex_extract(user_input):
                         self.knowledge_graph.add_triple(s, p, o, importance, "regex")
             except Exception:
