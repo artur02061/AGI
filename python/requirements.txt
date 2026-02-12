@@ -28,6 +28,9 @@ beautifulsoup4>=4.12.0      # HTML парсинг
 # ── Поиск ──
 duckduckgo-search>=6.0.0    # DuckDuckGo API
 
+# ── Файловые операции ──
+send2trash>=1.8.0           # Безопасное удаление в корзину
+
 # ── Конфигурация ──
 python-dotenv>=1.0.0        # .env файлы
 pyyaml>=6.0                 # YAML конфигурация личности
