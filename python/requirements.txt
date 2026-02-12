@@ -24,7 +24,6 @@ schedule>=1.2.0             # Планировщик
 # ── HTTP ──
 requests>=2.32.0            # HTTP клиент (legacy, для bs4)
 beautifulsoup4>=4.12.0      # HTML парсинг
-httpx[http2]>=0.28.0        # Async HTTP (предпочитать вместо requests)
 
 # ── Поиск ──
 duckduckgo-search>=6.0.0    # DuckDuckGo API
