@@ -4,8 +4,8 @@ build-backend = "maturin"
 
 [project]
 name = "kristina_core"
-version = "5.0.0"
-description = "Высокопроизводительное Rust-ядро для Кристины 5.0"
+version = "6.0.0"
+description = "Высокопроизводительное Rust-ядро для Кристины 6.0"
 requires-python = ">=3.11"
 
 [tool.maturin]
