@@ -184,23 +184,24 @@ class Orchestrator:
         # === ВСПОМОГАТЕЛЬНЫЕ АГЕНТЫ (параллельно) ===
         if supporting_agents:
             logger.info(f"🔄 Вспомогательные: {supporting_agents}")
-            
+
             tasks = []
+            valid_agents = []
             for agent_name in supporting_agents:
                 if agent_name in self.agents:
                     task = self._build_task(agent_name, plan, user_input, context)
                     tasks.append(self._execute_agent(agent_name, task))
-            
+                    valid_agents.append(agent_name)
+
             if tasks:
                 supporting_results = await asyncio.gather(*tasks, return_exceptions=True)
-                
-                for i, agent_name in enumerate(supporting_agents):
-                    if i < len(supporting_results):
-                        result = supporting_results[i]
-                        if isinstance(result, Exception):
-                            results[agent_name] = f"ERROR: {str(result)}"
-                        else:
-                            results[agent_name] = result
+
+                for i, agent_name in enumerate(valid_agents):
+                    result = supporting_results[i]
+                    if isinstance(result, Exception):
+                        results[agent_name] = f"ERROR: {str(result)}"
+                    else:
+                        results[agent_name] = result
         
         return results
     

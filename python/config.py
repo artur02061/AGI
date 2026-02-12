@@ -112,6 +112,15 @@ class KristinaConfig(BaseSettings):
     file_access_mode: str = "safe"
     file_search_max_depth: int = 4
     file_search_max_results: int = 10
+    blocked_directories: List[Path] = [
+        Path("/etc"),
+        Path("/boot"),
+        Path("/proc"),
+        Path("/sys"),
+        Path("/dev"),
+        Path("C:/Windows/System32"),
+    ]
+    allowed_directories: List[Path] = []
     blocked_extensions: List[str] = [
         # Windows
         ".sys", ".dll", ".exe", ".msi", ".bat",
@@ -323,6 +332,8 @@ _COMPAT_MAP = {
     "RAM_WARNING_THRESHOLD": "ram_warning_threshold",
     "GPU_WARNING_THRESHOLD": "gpu_warning_threshold",
     "BLOCKED_EXTENSIONS": "blocked_extensions",
+    "BLOCKED_DIRECTORIES": "blocked_directories",
+    "ALLOWED_DIRECTORIES": "allowed_directories",
     "PROTECTED_PROCESSES": "protected_processes",
     "SHORT_TERM_MEMORY_SIZE": "short_term_memory_size",
 }
