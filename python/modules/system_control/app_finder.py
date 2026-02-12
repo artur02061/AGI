@@ -2,6 +2,7 @@
 Универсальный поиск приложений на ПК с поддержкой игр
 """
 
+import asyncio
 import os
 import platform
 import json
@@ -43,7 +44,7 @@ class AppFinder:
             json.dump(self.app_cache, f, ensure_ascii=False, indent=2)
 
     def scan_system(self):
-        """Сканирует систему на наличие приложений"""
+        """Сканирует систему на наличие приложений (синхронный)"""
         apps = {}
 
         if IS_WINDOWS:
@@ -70,6 +71,10 @@ class AppFinder:
         self._save_cache()
 
         print(f"✅ Найдено {len(apps)} приложений")
+
+    async def async_scan_system(self):
+        """Асинхронная обёртка над scan_system — не блокирует event loop"""
+        await asyncio.to_thread(self.scan_system)
 
     # ═══════════════════════════════════════════════════════════
     #                    LINUX/macOS

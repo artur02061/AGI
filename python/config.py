@@ -109,7 +109,7 @@ class KristinaConfig(BaseSettings):
     web_rate_limit: int = 10
 
     # ── Файловая система ──
-    file_access_mode: str = "unrestricted"
+    file_access_mode: str = "safe"
     file_search_max_depth: int = 4
     file_search_max_results: int = 10
     blocked_extensions: List[str] = [
