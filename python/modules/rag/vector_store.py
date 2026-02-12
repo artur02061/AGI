@@ -332,19 +332,6 @@ class VectorMemory:
             except Exception as e:
                 logger.warning(f"⚠️ Ошибка загрузки кэша: {e}")
                 self.embedding_cache = {}
-        else:
-            # Миграция со старого .bin (pickle) если есть
-            old_bin = self._cache_path.with_suffix(".bin")
-            if old_bin.exists():
-                try:
-                    import pickle
-                    with open(old_bin, "rb") as f:
-                        self.embedding_cache = pickle.load(f)
-                    self._save_embedding_cache()
-                    old_bin.unlink()
-                    logger.info(f"🔄 Миграция pickle → JSON ({len(self.embedding_cache)})")
-                except Exception as e:
-                    logger.error(f"❌ Ошибка миграции: {e}")
 
     def _save_embedding_cache(self):
         """Сохраняет JSON кэш"""

@@ -73,17 +73,19 @@ class SystemController:
         # Запускаем
         try:
             subprocess.Popen(app['path'], shell=False)
-            
+
             logger.info(f"✅ Запущено: {app['name']}")
-            
+            self._log_operation("launch_app", app['path'], True, app['name'])
+
             return {
                 "success": True,
                 "message": f"✅ {app['name']} запущен",
                 "path": app['path']
             }
-        
+
         except Exception as e:
             logger.error(f"Ошибка запуска {app['name']}: {e}")
+            self._log_operation("launch_app", app.get('path', ''), False, str(e))
             return {
                 "success": False,
                 "message": f"Ошибка запуска: {str(e)}"
@@ -461,14 +463,16 @@ class SystemController:
                 subprocess.Popen(["xdg-open", str(path)])
             
             logger.info(f"✅ Файл открыт: {path.name}")
-            
+            self._log_operation("open_file", str(path), True)
+
             return {
                 "success": True,
                 "message": f"✅ Файл '{path.name}' открыт"
             }
-        
+
         except Exception as e:
             logger.error(f"Ошибка открытия файла: {e}")
+            self._log_operation("open_file", str(path), False, str(e))
             return {
                 "success": False,
                 "message": f"Ошибка открытия: {str(e)}"

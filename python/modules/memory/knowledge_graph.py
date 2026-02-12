@@ -53,6 +53,7 @@ class KnowledgeGraph:
         # Простое хранилище (всегда доступно, даже без networkx)
         self._triples: List[Dict] = []  # [{s, p, o, ts, importance}, ...]
         self._entity_index: Dict[str, Set[int]] = defaultdict(set)  # entity → triple indices
+        self._triple_keys: Set[tuple] = set()  # O(1) duplicate check: (s, p, o)
 
         self._load()
 
@@ -81,13 +82,16 @@ class KnowledgeGraph:
         if not subject or not predicate or not obj:
             return
 
-        # Проверяем дубликат
-        for t in self._triples:
-            if t["s"] == subject and t["p"] == predicate and t["o"] == obj:
-                # Обновляем важность и timestamp
-                t["importance"] = max(t["importance"], importance)
-                t["ts"] = datetime.now(timezone.utc).isoformat()
-                return
+        # O(1) проверка дубликата через set
+        triple_key = (subject, predicate, obj)
+        if triple_key in self._triple_keys:
+            # Обновляем важность и timestamp у существующей тройки
+            for t in self._triples:
+                if t["s"] == subject and t["p"] == predicate and t["o"] == obj:
+                    t["importance"] = max(t["importance"], importance)
+                    t["ts"] = datetime.now(timezone.utc).isoformat()
+                    break
+            return
 
         # Лимит
         if len(self._triples) >= self._max_edges:
@@ -103,6 +107,7 @@ class KnowledgeGraph:
             "source": source,
         }
         self._triples.append(triple)
+        self._triple_keys.add(triple_key)
 
         # Индексы
         self._entity_index[subject].add(idx)
@@ -319,11 +324,13 @@ JSON:"""
             with open(self._graph_file, "r", encoding="utf-8") as f:
                 self._triples = json.load(f)
 
-            # Перестраиваем индексы
+            # Перестраиваем индексы и set ключей
             self._entity_index.clear()
+            self._triple_keys.clear()
             for i, t in enumerate(self._triples):
                 self._entity_index[t["s"]].add(i)
                 self._entity_index[t["o"]].add(i)
+                self._triple_keys.add((t["s"], t["p"], t["o"]))
 
             # NetworkX
             if self._graph is not None:
@@ -348,7 +355,8 @@ JSON:"""
         )
         indices = sorted([i for i, _ in sorted_triples[:count]], reverse=True)
         for idx in indices:
-            self._triples.pop(idx)
+            t = self._triples.pop(idx)
+            self._triple_keys.discard((t["s"], t["p"], t["o"]))
 
         # Перестраиваем индексы
         self._entity_index.clear()

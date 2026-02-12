@@ -117,6 +117,7 @@ async def initialize_system():
     # Система
     from tools.system_tools import (
         SystemStatusTool, LaunchAppTool, ListProcessesTool, SearchAppsTool,
+        KillProcessTool, OpenFileTool,
     )
     from tools.file_tools import (
         SearchFilesTool, ReadFileTool, DeleteFileTool,
@@ -132,7 +133,8 @@ async def initialize_system():
         tools[t.schema.name] = t.execute
 
     # Система
-    for cls in [SystemStatusTool, LaunchAppTool, ListProcessesTool, SearchAppsTool]:
+    for cls in [SystemStatusTool, LaunchAppTool, ListProcessesTool,
+                SearchAppsTool, KillProcessTool, OpenFileTool]:
         t = cls(system_controller)
         tools[t.schema.name] = t.execute
 

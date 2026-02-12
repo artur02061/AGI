@@ -14,6 +14,7 @@
 """
 
 import logging
+import threading
 
 logger = logging.getLogger("kristina.bridge")
 
@@ -128,15 +129,17 @@ class MemoryAdapter:
                 import asyncio
                 try:
                     loop = asyncio.get_running_loop()
-                    asyncio.create_task(
+                    task = asyncio.create_task(
                         self.knowledge_graph.extract_and_add(user_input, response, importance)
                     )
+                    # Отслеживаем task чтобы избежать warnings в Python 3.12+
+                    task.add_done_callback(lambda t: t.exception() if not t.cancelled() and t.exception() else None)
                 except RuntimeError:
                     # No running loop — use sync fallback
                     for s, p, o in self.knowledge_graph._regex_extract(user_input):
                         self.knowledge_graph.add_triple(s, p, o, importance, "regex")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"KG extraction failed: {e}")
 
     def get_relevant_context(self, query: str, max_items: int = 3) -> str:
         parts = []
@@ -285,41 +288,46 @@ class ThreadTrackerAdapter:
     def __init__(self, timeout_secs=600):
         self._tracker = _RustThreadTracker(timeout_secs)
         self._v4_current_thread = None
+        self._lock = threading.Lock()
 
     @property
     def current_thread(self):
-        topic = None
-        if hasattr(self._tracker, 'get_current_topic'):
-            topic = self._tracker.get_current_topic()
-        if topic:
-            if self._v4_current_thread is None or self._v4_current_thread.get("topic") != topic:
-                self._v4_current_thread = {"topic": topic, "entities": [], "messages": []}
+        with self._lock:
+            topic = None
+            if hasattr(self._tracker, 'get_current_topic'):
+                topic = self._tracker.get_current_topic()
+            if topic:
+                if self._v4_current_thread is None or self._v4_current_thread.get("topic") != topic:
+                    self._v4_current_thread = {"topic": topic, "entities": [], "messages": []}
+                return self._v4_current_thread
+            if hasattr(self._tracker, 'current_thread') and self._tracker.current_thread:
+                return self._tracker.current_thread
             return self._v4_current_thread
-        if hasattr(self._tracker, 'current_thread') and self._tracker.current_thread:
-            return self._tracker.current_thread
-        return self._v4_current_thread
 
     def start_thread(self, topic, entities=None):
         entities = entities or []
-        self._tracker.start_thread(topic, entities)
-        self._v4_current_thread = {"topic": topic, "entities": entities, "messages": []}
+        with self._lock:
+            self._tracker.start_thread(topic, entities)
+            self._v4_current_thread = {"topic": topic, "entities": entities, "messages": []}
 
     def add_to_thread(self, user_input, response):
         self.add_message(user_input, response)
 
     def add_message(self, user_input, response):
-        if hasattr(self._tracker, 'add_message'):
-            self._tracker.add_message(user_input, response)
-        if self._v4_current_thread is not None:
-            self._v4_current_thread["messages"].append({"user": user_input, "assistant": response})
+        with self._lock:
+            if hasattr(self._tracker, 'add_message'):
+                self._tracker.add_message(user_input, response)
+            if self._v4_current_thread is not None:
+                self._v4_current_thread["messages"].append({"user": user_input, "assistant": response})
 
     def update(self, user_input, response):
-        self._tracker.update(user_input, response)
-        topic = self._tracker.get_current_topic() if hasattr(self._tracker, 'get_current_topic') else None
-        if topic and self._v4_current_thread is None:
-            self._v4_current_thread = {"topic": topic, "entities": [], "messages": []}
-        if self._v4_current_thread:
-            self._v4_current_thread.setdefault("messages", []).append({"user": user_input, "assistant": response})
+        with self._lock:
+            self._tracker.update(user_input, response)
+            topic = self._tracker.get_current_topic() if hasattr(self._tracker, 'get_current_topic') else None
+            if topic and self._v4_current_thread is None:
+                self._v4_current_thread = {"topic": topic, "entities": [], "messages": []}
+            if self._v4_current_thread:
+                self._v4_current_thread.setdefault("messages", []).append({"user": user_input, "assistant": response})
 
     def is_related(self, text): return self._tracker.is_related(text)
 

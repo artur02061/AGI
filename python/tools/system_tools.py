@@ -169,5 +169,75 @@ class SearchAppsTool(BaseTool):
         
         return result["message"]
 
+class KillProcessTool(BaseTool):
+    """Завершение процесса"""
+
+    def __init__(self, system_controller):
+        super().__init__()
+        self.controller = system_controller
+
+    @property
+    def schema(self) -> ToolSchema:
+        return ToolSchema(
+            name="kill_process",
+            description="Завершает процесс по имени",
+            required_args=["process_name"],
+            arg_types={"process_name": str},
+            examples=[
+                'kill_process("chrome")',
+                'kill_process("notepad")',
+            ]
+        )
+
+    async def execute(self, process_name: str) -> str:
+        logger.info(f"Завершение процесса: {process_name}")
+
+        is_valid, reason = validate_process_name(process_name)
+        if not is_valid:
+            return f"❌ {reason}"
+
+        result = await self.controller.kill_process(process_name)
+
+        if result["success"]:
+            logger.info(f"✅ {result['message']}")
+        else:
+            logger.warning(f"❌ {result['message']}")
+
+        return result["message"]
+
+
+class OpenFileTool(BaseTool):
+    """Открытие файла системным приложением"""
+
+    def __init__(self, system_controller):
+        super().__init__()
+        self.controller = system_controller
+
+    @property
+    def schema(self) -> ToolSchema:
+        return ToolSchema(
+            name="open_file",
+            description="Открывает файл системным приложением по умолчанию",
+            required_args=["filepath"],
+            arg_types={"filepath": str},
+            examples=[
+                'open_file("C:/Users/User/Desktop/report.pdf")',
+                'open_file("~/Documents/image.png")',
+            ]
+        )
+
+    async def execute(self, filepath: str) -> str:
+        logger.info(f"Открытие файла: {filepath}")
+
+        result = await self.controller.open_file(filepath)
+
+        if result["success"]:
+            logger.info(f"✅ {result['message']}")
+        else:
+            logger.warning(f"❌ {result['message']}")
+
+        return result["message"]
+
+
 # GetCurrentTimeTool и GetWeatherTool — УДАЛЕНЫ (дубликаты).
 # Рабочие реализации находятся в tools/web_tools.py
