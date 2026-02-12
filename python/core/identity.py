@@ -73,21 +73,36 @@ class IdentityEngine:
     def increment_conversation_depth(self):
         """Увеличивает счётчик глубины"""
         self.conversation_depth += 1
-        
-        # Падение энергии
+
+        # Падение энергии — каждое сообщение
+        self.energy_level = max(20, self.energy_level - config.ENERGY_DECAY_PER_MESSAGE)
         if self.conversation_depth % 10 == 0:
-            self.energy_level = max(20, self.energy_level - config.ENERGY_DECAY_PER_MESSAGE)
-            logger.debug(f"Энергия снижена до {self.energy_level}%")
+            logger.debug(f"Энергия: {self.energy_level}% (глубина: {self.conversation_depth})")
     
     def update_mood(self, emotion: str):
-        """Обновляет настроение"""
-        valid_moods = ['happy', 'satisfied', 'neutral', 'curious', 'frustrated', 'tired']
-        
-        if emotion in valid_moods:
+        """Обновляет настроение (принимает и VAD-метки, и английские)"""
+        # Маппинг VAD-меток (русских) → внутренние значения
+        _vad_to_mood = {
+            "паника": "frustrated",
+            "тревога": "frustrated",
+            "печаль": "tired",
+            "отчаяние": "tired",
+            "восторг": "happy",
+            "радость": "happy",
+            "спокойствие": "satisfied",
+            "дискомфорт": "frustrated",
+            "комфорт": "satisfied",
+            "нейтрально": "neutral",
+        }
+        valid_moods = {'happy', 'satisfied', 'neutral', 'curious', 'frustrated', 'tired'}
+
+        # Пробуем маппинг VAD → внутреннее, иначе используем как есть
+        mapped = _vad_to_mood.get(emotion, emotion)
+
+        if mapped in valid_moods:
             old_mood = self.current_mood
-            self.current_mood = emotion
-            
-            logger.debug(f"Настроение: {old_mood} → {emotion}")
+            self.current_mood = mapped
+            logger.debug(f"Настроение: {old_mood} → {mapped}")
     
     def analyze_interaction(self, user_input: str, response: str):
         """Анализирует взаимодействие для эволюции"""

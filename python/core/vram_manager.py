@@ -111,12 +111,20 @@ class VRAMManager:
                     self.loaded_models.add(agent_name)
                 return True
 
+        missing = []
         for agent_name in agent_names:
             if agent_name not in self.loaded_models:
+                # Проверяем, есть ли модель агента в Ollama
+                agent_cfg = config.AGENT_MODELS.get(agent_name, {})
+                model_name = agent_cfg.get("name", "").split(":")[0] if isinstance(agent_cfg, dict) else ""
+                if hasattr(self, '_model_cache') and model_name and model_name not in self._model_cache:
+                    missing.append(f"{agent_name} ({model_name})")
                 self.loaded_models.add(agent_name)
 
-        logger.debug("✅ Все агенты доступны")
+        if missing:
+            logger.warning(f"⚠️ Модели не найдены в Ollama: {', '.join(missing)}")
 
+        logger.debug("✅ Все агенты доступны")
         return True
     
     def get_stats(self) -> Dict:

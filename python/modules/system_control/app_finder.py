@@ -2,12 +2,15 @@
 Универсальный поиск приложений на ПК с поддержкой игр
 """
 
+import asyncio
 import os
 import platform
 import json
 import logging
 from pathlib import Path
 from typing import List, Dict, Optional
+
+import config
 
 logger = logging.getLogger("kristina.app_finder")
 
@@ -21,7 +24,7 @@ class AppFinder:
     """Находит любое приложение на компьютере, включая игры"""
 
     def __init__(self):
-        self.app_cache_file = Path("data/app_cache.json")
+        self.app_cache_file = config.config.data_dir / "app_cache.json"
         self.app_cache = self._load_cache()
 
         # Если кэш пустой — сканируем систему
@@ -43,7 +46,7 @@ class AppFinder:
             json.dump(self.app_cache, f, ensure_ascii=False, indent=2)
 
     def scan_system(self):
-        """Сканирует систему на наличие приложений"""
+        """Сканирует систему на наличие приложений (синхронный)"""
         apps = {}
 
         if IS_WINDOWS:
@@ -70,6 +73,10 @@ class AppFinder:
         self._save_cache()
 
         print(f"✅ Найдено {len(apps)} приложений")
+
+    async def async_scan_system(self):
+        """Асинхронная обёртка над scan_system — не блокирует event loop"""
+        await asyncio.to_thread(self.scan_system)
 
     # ═══════════════════════════════════════════════════════════
     #                    LINUX/macOS
@@ -136,7 +143,7 @@ class AppFinder:
                     elif line.startswith("Exec="):
                         exec_cmd = line[5:].split('%')[0].strip()
         except Exception as e:
-            logger.debug(f"Ошибка при поиске Epic Games: {e}")
+            logger.debug(f"Ошибка парсинга .desktop файла {path}: {e}")
         return name, exec_cmd
 
     # ═══════════════════════════════════════════════════════════
@@ -462,6 +469,11 @@ class AppFinder:
 
             for lnk_file in start_path.rglob("*.lnk"):
                 try:
+                    # Валидация: обрабатываем только .lnk из доверенных каталогов
+                    lnk_resolved = lnk_file.resolve()
+                    if not any(lnk_resolved.is_relative_to(sp) for sp in start_menu_paths if sp.exists()):
+                        continue
+
                     import win32com.client
                     shell = win32com.client.Dispatch("WScript.Shell")
                     shortcut = shell.CreateShortCut(str(lnk_file))
@@ -491,6 +503,10 @@ class AppFinder:
         if desktop.exists():
             for item in desktop.glob("*.lnk"):
                 try:
+                    # Валидация: .lnk должен быть реальным файлом в каталоге Desktop
+                    if not item.resolve().is_relative_to(desktop.resolve()):
+                        continue
+
                     import win32com.client
                     shell = win32com.client.Dispatch("WScript.Shell")
                     shortcut = shell.CreateShortCut(str(item))

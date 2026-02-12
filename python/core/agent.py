@@ -40,6 +40,11 @@ class AgentCore:
         # v6.0: Строим Ollama tool schemas из BaseTool.schema
         self._ollama_tools = self._build_ollama_tools()
 
+        # Consciousness-модули (инициализируются через set_consciousness_modules)
+        self.vad_emotions = None
+        self.self_awareness = None
+        self.metacognition = None
+
         # Статистика
         self.stats = {
             "total_queries": 0,
@@ -222,19 +227,14 @@ class AgentCore:
         tool_func = self.tools[name]
 
         try:
-            # Ollama передаёт args как dict → разворачиваем в kwargs
-            result = await tool_func(**args)
+            # Ollama native tool calling передаёт args как dict → kwargs
+            if isinstance(args, dict):
+                result = await tool_func(**args)
+            else:
+                result = await tool_func(*args)
             return str(result)
-        except TypeError as e:
-            # Несовпадение аргументов — пробуем positional
-            logger.warning(f"kwargs failed for {name}: {e}, trying positional")
-            try:
-                result = await tool_func(*args.values())
-                return str(result)
-            except Exception as e2:
-                return f"ERROR: Неверные аргументы для {name}: {e2}"
         except Exception as e:
-            logger.error(f"Ошибка {name}: {e}", exc_info=True)
+            logger.error(f"Tool error {name}(args={args}): {e}", exc_info=True)
             return f"ERROR: {e}"
 
     # ═══════════════════════════════════════════════════════════
@@ -373,7 +373,10 @@ class AgentCore:
             for r in results:
                 ts = r['metadata'].get('timestamp', '')
                 if ts:
-                    age = (datetime.now() - datetime.fromisoformat(ts)).total_seconds() / 60
+                    try:
+                        age = (datetime.now() - datetime.fromisoformat(ts)).total_seconds() / 60
+                    except (ValueError, TypeError):
+                        age = config.VECTOR_MIN_AGE_MINUTES + 1  # считаем старым
                     if age > config.VECTOR_MIN_AGE_MINUTES:
                         date = r['metadata'].get('date', '')
                         text = r['text'][:60]

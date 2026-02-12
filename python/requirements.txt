@@ -4,7 +4,7 @@
 ollama>=0.5.0               # Ollama Python client (tool calling + format="json")
 pydantic>=2.10.0            # Типизированная конфигурация
 pydantic-settings>=2.4.0    # .env + env vars
-structlog>=24.4.0           # Структурированное логирование
+
 
 # ── Производительность ──
 orjson>=3.10.0              # Быстрая JSON сериализация (5×)

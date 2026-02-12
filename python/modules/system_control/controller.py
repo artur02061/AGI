@@ -2,6 +2,7 @@
 Контроллер системы с улучшенной безопасностью
 """
 
+import asyncio
 import subprocess
 import platform
 import psutil
@@ -70,9 +71,22 @@ class SystemController:
                 "already_running": True
             }
         
+        # Валидация пути перед запуском
+        app_path = Path(app['path'])
+        if not app_path.exists():
+            return {
+                "success": False,
+                "message": f"Путь не существует: {app['path']}"
+            }
+        if not app_path.is_file():
+            return {
+                "success": False,
+                "message": f"Путь не является файлом: {app['path']}"
+            }
+
         # Запускаем
         try:
-            subprocess.Popen(app['path'], shell=False)
+            subprocess.Popen(str(app_path), shell=False)
 
             logger.info(f"✅ Запущено: {app['name']}")
             self._log_operation("launch_app", app['path'], True, app['name'])
@@ -331,18 +345,18 @@ class SystemController:
     
     async def search_file(self, filename: str, search_paths: List[str] = None) -> Dict[str, Any]:
         """
-        Ищет файл на всех дисках
-        
+        Ищет файл на всех дисках (неблокирующий через asyncio.to_thread)
+
         Args:
             filename: Имя файла для поиска
             search_paths: Пути для поиска (опционально)
-        
+
         Returns:
             {"success": bool, "message": str, "files": List}
         """
-        
+
         logger.info(f"Поиск файла: {filename}")
-        
+
         if not search_paths:
             # Популярные места
             search_paths = [
@@ -350,7 +364,7 @@ class SystemController:
                 str(Path.home() / "Documents"),
                 str(Path.home() / "Downloads"),
             ]
-            
+
             # Все доступные диски / корневые каталоги
             if IS_WINDOWS:
                 for drive in "CDEFGH":
@@ -359,42 +373,11 @@ class SystemController:
                         search_paths.append(drive_path)
             else:
                 search_paths.append(str(Path.home()))
-        
-        found_files = []
-        
-        for search_path in search_paths:
-            if not Path(search_path).exists():
-                continue
-            
-            try:
-                for root, dirs, files in Path(search_path).walk():
-                    # Проверяем безопасность
-                    is_safe, _ = validate_file_path(Path(root))
-                    if not is_safe:
-                        continue
-                    
-                    # Ограничиваем глубину
-                    depth = str(root)[len(search_path):].count(os.sep)
-                    if depth > config.FILE_SEARCH_MAX_DEPTH:
-                        continue
-                    
-                    for file in files:
-                        if filename.lower() in file.lower():
-                            full_path = root / file
-                            
-                            # Проверяем безопасность
-                            is_safe, _ = validate_file_path(full_path)
-                            if is_safe:
-                                found_files.append(str(full_path))
-                            
-                            if len(found_files) >= config.FILE_SEARCH_MAX_RESULTS:
-                                break
-                    
-                    if len(found_files) >= config.FILE_SEARCH_MAX_RESULTS:
-                        break
-            
-            except (PermissionError, OSError):
-                continue
+
+        # Выполняем блокирующий обход ФС в отдельном потоке
+        found_files = await asyncio.to_thread(
+            self._search_file_sync, filename, search_paths
+        )
         
         if not found_files:
             logger.warning(f"Файл не найден: {filename}")
@@ -423,6 +406,46 @@ class SystemController:
             "files": found_files
         }
     
+    def _search_file_sync(self, filename: str, search_paths: List[str]) -> List[str]:
+        """Синхронный обход ФС для поиска файлов (вызывается через asyncio.to_thread)"""
+        found_files = []
+
+        for search_path in search_paths:
+            if not Path(search_path).exists():
+                continue
+
+            try:
+                for root, dirs, files in Path(search_path).walk():
+                    # Проверяем безопасность
+                    is_safe, _ = validate_file_path(Path(root))
+                    if not is_safe:
+                        continue
+
+                    # Ограничиваем глубину
+                    depth = str(root)[len(search_path):].count(os.sep)
+                    if depth > config.FILE_SEARCH_MAX_DEPTH:
+                        continue
+
+                    for file in files:
+                        if filename.lower() in file.lower():
+                            full_path = root / file
+
+                            # Проверяем безопасность
+                            is_safe, _ = validate_file_path(full_path)
+                            if is_safe:
+                                found_files.append(str(full_path))
+
+                            if len(found_files) >= config.FILE_SEARCH_MAX_RESULTS:
+                                break
+
+                    if len(found_files) >= config.FILE_SEARCH_MAX_RESULTS:
+                        break
+
+            except (PermissionError, OSError):
+                continue
+
+        return found_files
+
     async def open_file(self, filepath: str) -> Dict[str, Any]:
         """
         Открывает файл системным приложением

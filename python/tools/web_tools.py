@@ -11,32 +11,24 @@ import config
 
 logger = get_logger("web_tools")
 
-# ✅ ИСПРАВЛЕНИЕ: Проверяем доступность библиотек при импорте модуля
+# Единая библиотека для веб-поиска (duckduckgo-search из requirements.txt)
 DDGS_AVAILABLE = False
 DDGS_CLASS = None
 
 try:
-    from ddgs import DDGS as DDGS_NEW
-    DDGS_CLASS = DDGS_NEW
+    from duckduckgo_search import DDGS
+    DDGS_CLASS = DDGS
     DDGS_AVAILABLE = True
-    logger.info("✅ Используем библиотеку 'ddgs' для веб-поиска")
+    logger.info("DuckDuckGo search ready")
 except ImportError:
-    try:
-        from duckduckgo_search import DDGS as DDGS_OLD
-        DDGS_CLASS = DDGS_OLD
-        DDGS_AVAILABLE = True
-        logger.info("✅ Используем библиотеку 'duckduckgo_search' для веб-поиска")
-    except ImportError:
-        logger.warning("⚠️ Библиотеки для веб-поиска не установлены")
-        logger.warning("⚠️ Установите: pip install ddgs  ИЛИ  pip install duckduckgo-search")
+    logger.warning("duckduckgo-search не установлен: pip install duckduckgo-search")
 
 class WebSearchTool(BaseTool):
     """Поиск в интернете"""
     
     def __init__(self):
         super().__init__()
-        self.rate_limiter = []
-    
+
     @property
     def schema(self) -> ToolSchema:
         return ToolSchema(

@@ -12,8 +12,6 @@ from typing import Dict, List, Any
 import json
 import re
 
-from functools import lru_cache
-
 from core.agents.base_agent import BaseAgent
 import config
 

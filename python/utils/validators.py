@@ -111,9 +111,22 @@ def validate_file_path(path: Path) -> Tuple[bool, str]:
         if ext in blocked_ext:
             return False, f"Расширение {ext} запрещено"
 
-    # Проверка режима restricted
-    file_access_mode = getattr(config, 'FILE_ACCESS_MODE', 'unrestricted')
-    if file_access_mode == "restricted":
+    # Проверка режима доступа
+    file_access_mode = getattr(config, 'FILE_ACCESS_MODE', 'safe')
+
+    if file_access_mode == "safe":
+        # В режиме "safe" разрешаем только домашнюю директорию и ниже
+        home = Path.home()
+        try:
+            if not resolved.is_relative_to(home):
+                return False, f"Режим 'safe': доступ разрешён только внутри {home}"
+        except (ValueError, AttributeError):
+            try:
+                resolved.relative_to(home)
+            except ValueError:
+                return False, f"Режим 'safe': доступ разрешён только внутри {home}"
+
+    elif file_access_mode == "restricted":
         is_allowed = False
         allowed_dirs = getattr(config, 'ALLOWED_DIRECTORIES', [])
 
