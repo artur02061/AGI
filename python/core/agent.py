@@ -11,6 +11,8 @@
 """
 
 import asyncio
+import hashlib
+import re
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from ollama import AsyncClient
@@ -415,12 +417,10 @@ class AgentCore:
         return text[:50] if len(text.split()) > 3 else None
 
     def _extract_entities(self, text: str) -> List[str]:
-        import re
         return list(set(re.findall(r'\b[A-ZА-Я][a-zа-я]+\b', text)[:3]))
 
     def _make_cache_key(self, query: str) -> str:
         """Кэш-ключ без коллизий (hashlib вместо truncation)"""
-        import hashlib
         normalized = query.lower().strip()
         return hashlib.md5(normalized.encode()).hexdigest()
 

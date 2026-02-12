@@ -28,6 +28,10 @@ class VRAMManager:
         
         # CPU модели всегда "загружены"
         self.loaded_models: Set[str] = set()
+
+        # Кэш списка моделей Ollama
+        self._model_cache: Set[str] = set()
+        self._model_cache_time: float = 0.0
         
         # Инициализация NVML
         self.nvml_initialized = False
@@ -97,12 +101,17 @@ class VRAMManager:
         # Кэшируем список моделей (обновляем раз в 60с)
         import time
         now = time.time()
-        if not hasattr(self, '_model_cache') or now - self._model_cache_time > 60:
+        if now - self._model_cache_time > 60:
             try:
                 from ollama import AsyncClient
                 client = AsyncClient()
                 models_resp = await client.list()
-                self._model_cache = {m.get('name', '').split(':')[0] for m in models_resp.get('models', [])}
+                models_list = models_resp.get('models', []) if isinstance(models_resp, dict) else getattr(models_resp, 'models', [])
+                names = set()
+                for m in models_list:
+                    name = m.get('name', '') if isinstance(m, dict) else getattr(m, 'name', '')
+                    names.add(name.split(':')[0])
+                self._model_cache = names
                 self._model_cache_time = now
             except Exception as e:
                 logger.warning(f"⚠️ Не удалось проверить модели Ollama: {e}")
@@ -117,7 +126,7 @@ class VRAMManager:
                 # Проверяем, есть ли модель агента в Ollama
                 agent_cfg = config.AGENT_MODELS.get(agent_name, {})
                 model_name = agent_cfg.get("name", "").split(":")[0] if isinstance(agent_cfg, dict) else ""
-                if hasattr(self, '_model_cache') and model_name and model_name not in self._model_cache:
+                if self._model_cache and model_name and model_name not in self._model_cache:
                     missing.append(f"{agent_name} ({model_name})")
                 self.loaded_models.add(agent_name)
 
