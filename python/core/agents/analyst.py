@@ -111,7 +111,10 @@ class AnalystAgent(BaseAgent):
         elif task_type == "data_analysis":
             # Анализ данных
             return await self._analyze_data(task)
-        
+
+        elif task_type == "summarization":
+            return await self._summarize(task)
+
         else:
             return f"ERROR: Неизвестный тип задачи: {task_type}"
     

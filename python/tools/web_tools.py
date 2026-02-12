@@ -28,8 +28,7 @@ class WebSearchTool(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.rate_limiter = []
-    
+
     @property
     def schema(self) -> ToolSchema:
         return ToolSchema(

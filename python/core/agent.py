@@ -40,6 +40,11 @@ class AgentCore:
         # v6.0: Строим Ollama tool schemas из BaseTool.schema
         self._ollama_tools = self._build_ollama_tools()
 
+        # Consciousness-модули (инициализируются через set_consciousness_modules)
+        self.vad_emotions = None
+        self.self_awareness = None
+        self.metacognition = None
+
         # Статистика
         self.stats = {
             "total_queries": 0,
@@ -368,7 +373,10 @@ class AgentCore:
             for r in results:
                 ts = r['metadata'].get('timestamp', '')
                 if ts:
-                    age = (datetime.now() - datetime.fromisoformat(ts)).total_seconds() / 60
+                    try:
+                        age = (datetime.now() - datetime.fromisoformat(ts)).total_seconds() / 60
+                    except (ValueError, TypeError):
+                        age = config.VECTOR_MIN_AGE_MINUTES + 1  # считаем старым
                     if age > config.VECTOR_MIN_AGE_MINUTES:
                         date = r['metadata'].get('date', '')
                         text = r['text'][:60]

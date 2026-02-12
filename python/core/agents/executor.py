@@ -87,18 +87,9 @@ class ExecutorAgent(BaseAgent):
             return str(result)
 
         except TypeError as e:
-            # Несовпадение аргументов — пробуем альтернативный вызов
-            try:
-                if isinstance(args, dict):
-                    result = await tool(*args.values())
-                else:
-                    result = await tool(**{f"arg{i}": v for i, v in enumerate(args)})
-                self._update_stats(True, 0.1)
-                return str(result)
-            except Exception as e2:
-                self._update_stats(False, 0.1)
-                self.logger.error(f"Ошибка аргументов {tool_name}: {e2}")
-                return f"ERROR: Неверные аргументы для {tool_name}: {e}"
+            self._update_stats(False, 0.1)
+            self.logger.error(f"Несовпадение аргументов {tool_name}({args}): {e}")
+            return f"ERROR: Неверные аргументы для {tool_name}: {e}"
 
         except Exception as e:
             self._update_stats(False, 0.1)
@@ -107,9 +98,7 @@ class ExecutorAgent(BaseAgent):
     
     def _detect_tool_from_input(self, user_input: str) -> Optional[Dict[str, Any]]:
         """Определяет инструмент из текста"""
-    
-        import re
-    
+
         text_lower = user_input.lower()
     
         # === ЧТЕНИЕ ФАЙЛА (по упоминанию) ===

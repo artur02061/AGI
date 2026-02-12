@@ -10,6 +10,8 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Optional
 
+import config
+
 logger = logging.getLogger("kristina.app_finder")
 
 IS_WINDOWS = platform.system() == "Windows"
@@ -22,7 +24,7 @@ class AppFinder:
     """Находит любое приложение на компьютере, включая игры"""
 
     def __init__(self):
-        self.app_cache_file = Path("data/app_cache.json")
+        self.app_cache_file = config.config.data_dir / "app_cache.json"
         self.app_cache = self._load_cache()
 
         # Если кэш пустой — сканируем систему
@@ -141,7 +143,7 @@ class AppFinder:
                     elif line.startswith("Exec="):
                         exec_cmd = line[5:].split('%')[0].strip()
         except Exception as e:
-            logger.debug(f"Ошибка при поиске Epic Games: {e}")
+            logger.debug(f"Ошибка парсинга .desktop файла {path}: {e}")
         return name, exec_cmd
 
     # ═══════════════════════════════════════════════════════════
