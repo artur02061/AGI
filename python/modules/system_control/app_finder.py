@@ -5,8 +5,11 @@
 import os
 import platform
 import json
+import logging
 from pathlib import Path
 from typing import List, Dict, Optional
+
+logger = logging.getLogger("kristina.app_finder")
 
 IS_WINDOWS = platform.system() == "Windows"
 
@@ -95,7 +98,8 @@ class AppFinder:
                             'path': exec_path,
                             'source': 'desktop_entry'
                         }
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Ошибка при сканировании: {e}")
                     continue
 
         # Бинарники из PATH
@@ -131,8 +135,8 @@ class AppFinder:
                         name = line[5:]
                     elif line.startswith("Exec="):
                         exec_cmd = line[5:].split('%')[0].strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Ошибка при поиске Epic Games: {e}")
         return name, exec_cmd
 
     # ═══════════════════════════════════════════════════════════
@@ -188,8 +192,8 @@ class AppFinder:
                 steam_path, _ = winreg.QueryValueEx(key, "SteamPath")
                 winreg.CloseKey(key)
                 steam_paths_to_check.append(Path(steam_path))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Ошибка при сканировании: {e}")
 
             # Стандартные пути на всех дисках
             for drive in ['C', 'D', 'E', 'F', 'G']:
@@ -302,10 +306,11 @@ class AppFinder:
                                     if game_name.lower() in exe_file.name.lower():
                                         games[game_name] = str(exe_file)
                                         break
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"Ошибка парсинга манифеста: {e}")
                         continue
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Ошибка при поиске Epic Games: {e}")
 
         return games
 
@@ -378,15 +383,17 @@ class AppFinder:
                                     'path': exe_path,
                                     'source': 'registry'
                                 }
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"Ошибка чтения записи реестра: {e}")
 
                         winreg.CloseKey(subkey)
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"Ошибка чтения ключа реестра: {e}")
                         continue
 
                 winreg.CloseKey(key)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Ошибка при сканировании: {e}")
                 continue
 
         return apps
@@ -431,7 +438,8 @@ class AppFinder:
                                 'path': full_path,
                                 'source': 'program_files'
                             }
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Ошибка при сканировании: {e}")
                 continue
 
         return apps
@@ -466,7 +474,8 @@ class AppFinder:
                             'path': target,
                             'source': 'start_menu'
                         }
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Ошибка при сканировании: {e}")
                     continue
 
         return apps
@@ -494,7 +503,8 @@ class AppFinder:
                             'path': target,
                             'source': 'desktop'
                         }
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Ошибка при сканировании: {e}")
                     continue
 
         return apps

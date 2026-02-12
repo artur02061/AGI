@@ -10,6 +10,7 @@
 - ✅ Structured output — Ollama возвращает JSON tool_calls напрямую
 """
 
+import asyncio
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from ollama import AsyncClient
@@ -47,8 +48,9 @@ class AgentCore:
             "cache_hits": 0,
         }
 
-        # Кэш ответов
+        # Кэш ответов (asyncio-safe через Lock)
         self.response_cache = {} if config.RESPONSE_CACHE_ENABLED else None
+        self._cache_lock = asyncio.Lock()
 
         logger.info(
             f"Агент v6.0 (native tool calling): "
@@ -72,7 +74,7 @@ class AgentCore:
 
         # Кэш
         if self.response_cache is not None:
-            cached = self._check_cache(user_input)
+            cached = await self._check_cache(user_input)
             if cached:
                 self.stats["cache_hits"] += 1
                 return cached
@@ -85,7 +87,7 @@ class AgentCore:
 
         # Сохранение
         if self.response_cache is not None:
-            self._save_to_cache(user_input, final_response)
+            await self._save_to_cache(user_input, final_response)
 
         if self.thread_memory.current_thread:
             self.thread_memory.add_to_thread(user_input, final_response)
@@ -419,29 +421,31 @@ class AgentCore:
         normalized = query.lower().strip()
         return hashlib.md5(normalized.encode()).hexdigest()
 
-    def _check_cache(self, query: str) -> Optional[str]:
-        cache_key = self._make_cache_key(query)
-        if cache_key in self.response_cache:
-            cached = self.response_cache[cache_key]
-            age = (datetime.now() - cached['timestamp']).total_seconds()
-            if age < config.AGENT_CACHE_TTL:
-                return cached['response']
-            del self.response_cache[cache_key]
-        return None
+    async def _check_cache(self, query: str) -> Optional[str]:
+        async with self._cache_lock:
+            cache_key = self._make_cache_key(query)
+            if cache_key in self.response_cache:
+                cached = self.response_cache[cache_key]
+                age = (datetime.now() - cached['timestamp']).total_seconds()
+                if age < config.AGENT_CACHE_TTL:
+                    return cached['response']
+                del self.response_cache[cache_key]
+            return None
 
-    def _save_to_cache(self, query: str, response: str):
-        cache_key = self._make_cache_key(query)
-        self.response_cache[cache_key] = {
-            'response': response,
-            'timestamp': datetime.now(),
-        }
-        if len(self.response_cache) > 100:
-            sorted_items = sorted(
-                self.response_cache.items(),
-                key=lambda x: x[1]['timestamp'],
-            )
-            for key, _ in sorted_items[:20]:
-                del self.response_cache[key]
+    async def _save_to_cache(self, query: str, response: str):
+        async with self._cache_lock:
+            cache_key = self._make_cache_key(query)
+            self.response_cache[cache_key] = {
+                'response': response,
+                'timestamp': datetime.now(),
+            }
+            if len(self.response_cache) > 100:
+                sorted_items = sorted(
+                    self.response_cache.items(),
+                    key=lambda x: x[1]['timestamp'],
+                )
+                for key, _ in sorted_items[:20]:
+                    del self.response_cache[key]
 
     def _save_to_vector_memory(self, user_input: str, response: str):
         importance = min(3, 1 + self._request_tool_calls)
