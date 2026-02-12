@@ -132,19 +132,26 @@ class DeleteFileTool(BaseTool):
         
         path = Path(filepath).expanduser()
         
-        # Если это просто имя файла — ищем его сначала
+        # Если это просто имя файла — ищем в стандартных местах
         if not path.is_absolute():
-            logger.info(f"Получено имя файла, ищу на рабочем столе: {filepath}")
-            
-            # Ищем на рабочем столе
-            desktop = Path.home() / "Desktop"
-            potential_path = desktop / filepath
-            
-            if potential_path.exists():
-                logger.info(f"Файл найден: {potential_path}")
-                path = potential_path
-            else:
-                return f"Файл '{filepath}' не найден на рабочем столе. Укажи полный путь."
+            logger.info(f"Получено имя файла, ищу в стандартных местах: {filepath}")
+
+            search_dirs = [
+                Path.home() / "Desktop",
+                Path.home() / "Рабочий стол",
+                Path.home() / "Downloads",
+                Path.home(),
+            ]
+            found = False
+            for d in search_dirs:
+                potential_path = d / filepath
+                if potential_path.exists():
+                    logger.info(f"Файл найден: {potential_path}")
+                    path = potential_path
+                    found = True
+                    break
+            if not found:
+                return f"Файл '{filepath}' не найден. Укажи полный путь."
         
         # Проверка безопасности
         is_safe, reason = validate_file_path(path)
@@ -262,10 +269,16 @@ class CreateFileTool(BaseTool):
         
         path = Path(filepath).expanduser()
         
-        # Если это просто имя файла — создаём на рабочем столе
+        # Если это просто имя файла — создаём в домашней директории
         if not path.is_absolute():
-            logger.info(f"Получено имя файла, создаю на рабочем столе: {filepath}")
-            desktop = Path.home() / "Desktop"
+            logger.info(f"Получено имя файла, создаю в домашней директории: {filepath}")
+            home_dir = Path.home()
+            # Desktop если существует, иначе home
+            desktop = home_dir / "Desktop"
+            if not desktop.exists():
+                desktop = home_dir / "Рабочий стол"
+            if not desktop.exists():
+                desktop = home_dir
             path = desktop / filepath
         
         # Проверка безопасности
@@ -314,10 +327,15 @@ class WriteFileTool(BaseTool):
         
         path = Path(filepath).expanduser()
         
-        # Если имя — ищем на рабочем столе
+        # Если имя — ищем в стандартных местах
         if not path.is_absolute():
-            desktop = Path.home() / "Desktop"
-            path = desktop / filepath
+            for d in [Path.home() / "Desktop", Path.home() / "Рабочий стол", Path.home()]:
+                candidate = d / filepath
+                if candidate.exists():
+                    path = candidate
+                    break
+            else:
+                path = Path.home() / filepath
         
         # Проверка безопасности
         is_safe, reason = validate_file_path(path)

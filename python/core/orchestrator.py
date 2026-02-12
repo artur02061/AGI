@@ -110,18 +110,27 @@ class Orchestrator:
             
             # === ШАГ 6: СОХРАНЕНИЕ ===
             self._save_to_memory(user_input, final_response, plan)
-            
+
             elapsed = (datetime.now() - start_time).total_seconds()
             self.stats["successful_requests"] += 1
             self.stats["total_time"] += elapsed
             self.stats["avg_time"] = self.stats["total_time"] / self.stats["total_requests"]
-            
+
+            # MetaCognition: записываем результат стратегии
+            if hasattr(self, 'metacognition') and self.metacognition:
+                strategy = plan.get("primary_agent", "director")
+                self.metacognition.record_strategy_outcome(strategy, success=True)
+                self.metacognition.record_outcome(user_input, final_response, elapsed)
+
             logger.info(f"✅ Запрос обработан за {elapsed:.2f}s")
-            
+
             return final_response
-        
+
         except Exception as e:
             self.stats["failed_requests"] += 1
+            # MetaCognition: записываем ошибку
+            if hasattr(self, 'metacognition') and self.metacognition:
+                self.metacognition.record_strategy_outcome("unknown", success=False)
             logger.error(f"❌ Ошибка обработки: {e}", exc_info=True)
             return f"Произошла ошибка при обработке запроса: {str(e)}"
     

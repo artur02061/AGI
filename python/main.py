@@ -1,5 +1,5 @@
 """
-Кристина 5.0 — Multi-Agent AI Assistant (Hybrid Rust+Python)
+Кристина 6.0 — Multi-Agent AI Assistant (Hybrid Rust+Python)
 
 Точка входа. Все CPU-интенсивные модули работают через Rust ядро (kristina_core).
 Если Rust не собран — автоматический fallback на Python.
@@ -31,7 +31,7 @@ log = structlog.get_logger("kristina")
 # ── Rust/Python bridge ──
 from bridge import (
     RUST_AVAILABLE, MemoryEngine, EmbeddingCache,
-    ContextCompressor, ThreadTracker,
+    ThreadTracker,
 )
 
 
@@ -90,8 +90,6 @@ async def initialize_system():
              size=embedding_cache.len(),
              backend="rust" if RUST_AVAILABLE else "python")
 
-    context_compressor = ContextCompressor(compression_ratio=0.3)
-
     thread_tracker = ThreadTracker(timeout_secs=config.thread_timeout_seconds)
 
     # v6.0: Новые модули (consciousness + SIGMA)
@@ -115,10 +113,10 @@ async def initialize_system():
 
     # ── Инструменты ──
     # Веб (web_tools.py — рабочие реализации, без дубликатов)
-    from tools.web_tools import WebSearchTool, WebFetchTool, GetWeatherTool, GetCurrentTimeTool
-    # Система (без дубликатов GetWeatherTool/GetCurrentTimeTool)
+    from tools.web_tools import WebSearchTool, WebFetchTool, GetWeatherTool, GetCurrentTimeTool, GetCurrencyRateTool
+    # Система
     from tools.system_tools import (
-        SystemStatusTool, LaunchAppTool, ListProcessesTool,
+        SystemStatusTool, LaunchAppTool, ListProcessesTool, SearchAppsTool,
     )
     from tools.file_tools import (
         SearchFilesTool, ReadFileTool, DeleteFileTool,
@@ -134,15 +132,12 @@ async def initialize_system():
         tools[t.schema.name] = t.execute
 
     # Система
-    for cls, needs_ctrl in [
-        (SystemStatusTool, True), (LaunchAppTool, True),
-        (ListProcessesTool, True),
-    ]:
+    for cls in [SystemStatusTool, LaunchAppTool, ListProcessesTool, SearchAppsTool]:
         t = cls(system_controller)
         tools[t.schema.name] = t.execute
 
-    # Время и погода (из web_tools — рабочие реализации)
-    for cls in [GetCurrentTimeTool, GetWeatherTool]:
+    # Время, погода, валюта (из web_tools)
+    for cls in [GetCurrentTimeTool, GetWeatherTool, GetCurrencyRateTool]:
         t = cls()
         tools[t.schema.name] = t.execute
 
@@ -152,9 +147,9 @@ async def initialize_system():
         t = cls(system_controller) if cls == SearchFilesTool else cls()
         tools[t.schema.name] = t.execute
 
-    # Память
+    # Память (передаём общий embedding cache для единого кэширования)
     from modules.rag.vector_store import VectorMemory
-    vector_memory = VectorMemory()
+    vector_memory = VectorMemory(shared_embedding_cache=embedding_cache)
 
     for cls in [RecallMemoryTool, SearchMemoryTool]:
         t = cls(memory) if cls == RecallMemoryTool else cls(vector_memory)
@@ -192,6 +187,7 @@ async def initialize_system():
     # 2.5: Передаём consciousness-модули агенту для использования в промптах
     agent.vad_emotions = vad_emotions
     agent.self_awareness = self_awareness
+    agent.metacognition = metacognition
 
     log.info("system_ready")
 
@@ -207,7 +203,6 @@ async def initialize_system():
         "system_controller": system_controller,
         "vram_manager": vram_manager,
         "thread_tracker": thread_tracker,
-        "context_compressor": context_compressor,
     }
 
 

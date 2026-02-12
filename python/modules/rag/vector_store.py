@@ -75,7 +75,7 @@ def _init_chromadb(persist_dir: str):
 class VectorMemory:
     """Векторная память с персистентным хранилищем"""
 
-    def __init__(self, persist_dir: str = None):
+    def __init__(self, persist_dir: str = None, shared_embedding_cache=None):
         persist_dir = persist_dir or str(config.VECTOR_DB_DIR)
         Path(persist_dir).mkdir(parents=True, exist_ok=True)
 
@@ -92,11 +92,12 @@ class VectorMemory:
             except Exception as e:
                 logger.error(f"❌ Ошибка создания коллекции: {e}")
 
-        # Embedding кэш (JSON, не pickle)
+        # Embedding кэш — используем общий если передан, иначе свой
+        self._shared_cache = shared_embedding_cache
         self.embedding_cache: Dict[str, List[float]] = {}
         self._cache_path = Path(config.DATA_DIR) / "embedding_cache.json"
 
-        if config.EMBEDDING_CACHE_ENABLED:
+        if self._shared_cache is None and config.EMBEDDING_CACHE_ENABLED:
             self._load_embedding_cache()
 
         # Счётчик документов
@@ -273,15 +274,32 @@ class VectorMemory:
     # ── Embeddings ──
 
     def _get_embedding(self, text: str) -> List[float]:
-        """Получает embedding с кэшированием (async-safe через to_thread)"""
+        """Получает embedding с кэшированием (через shared или local cache)"""
+        # Если есть shared cache (EmbeddingCacheAdapter) — используем его
+        if self._shared_cache is not None:
+            cached = self._shared_cache.get(text)
+            if cached is not None:
+                return cached
+
+            try:
+                response = ollama.embeddings(
+                    model=config.EMBEDDING_MODEL,
+                    prompt=text,
+                )
+                embedding = response["embedding"]
+                self._shared_cache.put(text, embedding)
+                return embedding
+            except Exception as e:
+                logger.error(f"❌ Ошибка embedding: {e}")
+                return [0.0] * config.EMBEDDING_DIM
+
+        # Fallback: локальный cache
         text_hash = hashlib.md5(text.encode()).hexdigest()
 
         if config.EMBEDDING_CACHE_ENABLED and text_hash in self.embedding_cache:
             return self.embedding_cache[text_hash]
 
         try:
-            # Синхронный вызов — но безопасный из sync-контекста
-            # Для async контекста используйте asyncio.to_thread()
             response = ollama.embeddings(
                 model=config.EMBEDDING_MODEL,
                 prompt=text,
@@ -298,6 +316,11 @@ class VectorMemory:
         except Exception as e:
             logger.error(f"❌ Ошибка embedding: {e}")
             return [0.0] * config.EMBEDDING_DIM
+
+    async def _get_embedding_async(self, text: str) -> List[float]:
+        """Async-safe embedding — не блокирует event loop"""
+        import asyncio
+        return await asyncio.to_thread(self._get_embedding, text)
 
     def _load_embedding_cache(self):
         """Загружает JSON кэш"""
