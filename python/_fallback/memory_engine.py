@@ -182,12 +182,23 @@ class MemoryEngine:
                 self._keyword_index[h].append(idx)
 
     def _evict_episodes(self):
-        """Удаляет 10% наименее важных эпизодов"""
+        """Удаляет 10% наименее важных эпизодов (с учётом возраста)"""
         remove_count = max(1, self._max_episodic // 10)
-        scored = sorted(
-            enumerate(self._episodic),
-            key=lambda x: x[1].get("importance", 0),
-        )
+        now = datetime.now(timezone.utc)
+
+        def eviction_score(item):
+            idx, ep = item
+            age_hours = 1.0
+            try:
+                ts = datetime.fromisoformat(ep['timestamp'])
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                age_hours = max(1.0, (now - ts).total_seconds() / 3600)
+            except (KeyError, ValueError):
+                pass
+            return ep.get("importance", 0) / age_hours
+
+        scored = sorted(enumerate(self._episodic), key=eviction_score)
         indices_to_remove = sorted([i for i, _ in scored[:remove_count]], reverse=True)
         for idx in indices_to_remove:
             if idx < len(self._episodic):
@@ -196,7 +207,7 @@ class MemoryEngine:
 
     @staticmethod
     def _word_hash(word: str) -> int:
-        return int(hashlib.md5(word.encode()).hexdigest()[:8], 16)
+        return int(hashlib.md5(word.encode()).hexdigest(), 16)
 
     @staticmethod
     def _extract_keywords(text: str) -> List[str]:

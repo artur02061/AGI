@@ -120,9 +120,18 @@ class MemorySystem:
             except Exception as e:
                 logger.debug(f"KG extraction skipped: {e}")
 
-        # Ротация
+        # Ротация: учитываем и важность, и возраст
         if len(self.episodic) > config.MAX_EPISODIC_MEMORY:
-            self.episodic.sort(key=lambda x: x['importance'])
+            now = datetime.now()
+            def eviction_score(ep):
+                age_hours = 1.0
+                try:
+                    ts = datetime.fromisoformat(ep['timestamp'])
+                    age_hours = max(1.0, (now - ts).total_seconds() / 3600)
+                except (KeyError, ValueError):
+                    pass
+                return ep.get('importance', 1) / age_hours
+            self.episodic.sort(key=eviction_score)
             self.episodic = self.episodic[100:]
 
     # ═══════════════════════════════════════════════════════════

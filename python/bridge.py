@@ -204,7 +204,9 @@ class MemoryAdapter:
                 pass
 
     def load(self):
-        pass
+        """Загружает память с диска (делегирует в engine)"""
+        if hasattr(self._engine, 'load'):
+            self._engine.load()
 
     def add_semantic(self, key: str, value: str):
         if hasattr(self._engine, 'add_semantic'):
@@ -353,8 +355,15 @@ class ThreadTrackerAdapter:
             return self._tracker.get_stats()
         return {"current_thread": self._v4_current_thread is not None}
 
-    def save(self): pass
-    def load(self): pass
+    def save(self):
+        """Сохраняет историю нитей"""
+        if hasattr(self._tracker, 'save'):
+            self._tracker.save()
+
+    def load(self):
+        """Загружает историю нитей"""
+        if hasattr(self._tracker, 'load'):
+            self._tracker.load()
 
 
 # ═══════════════════════════════════════════════════════════════

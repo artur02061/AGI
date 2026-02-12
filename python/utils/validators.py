@@ -149,16 +149,33 @@ def validate_process_name(process_name: str) -> Tuple[bool, str]:
 
 def validate_url(url: str) -> Tuple[bool, str]:
     """Проверяет корректность URL"""
-    
+
     if not url:
         return False, "URL не указан"
-    
+
     if not url.startswith(('http://', 'https://')):
         return False, "URL должен начинаться с http:// или https://"
-    
-    # Проверка на подозрительные домены (опционально)
-    suspicious = ['localhost', '127.0.0.1', '0.0.0.0']
-    if any(s in url.lower() for s in suspicious):
-        return False, f"Подозрительный URL: {url}"
-    
+
+    # Проверка на localhost и private IP ranges
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(url)
+        host = parsed.hostname or ""
+    except Exception:
+        return False, f"Некорректный URL: {url}"
+
+    # Localhost
+    blocked_hosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1']
+    if host in blocked_hosts:
+        return False, f"Доступ к локальным адресам запрещён: {host}"
+
+    # Private IP ranges (RFC 1918 + link-local)
+    import ipaddress
+    try:
+        ip = ipaddress.ip_address(host)
+        if ip.is_private or ip.is_loopback or ip.is_link_local:
+            return False, f"Доступ к приватным IP запрещён: {host}"
+    except ValueError:
+        pass  # hostname, не IP — OK
+
     return True, "OK"

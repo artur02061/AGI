@@ -113,12 +113,18 @@ class KristinaConfig(BaseSettings):
     file_search_max_depth: int = 4
     file_search_max_results: int = 10
     blocked_extensions: List[str] = [
+        # Windows
         ".sys", ".dll", ".exe", ".msi", ".bat",
         ".cmd", ".ps1", ".vbs", ".reg", ".scr",
+        # Linux/macOS
+        ".so", ".ko", ".deb", ".rpm",
     ]
     protected_processes: List[str] = [
+        # Windows
         "System", "csrss.exe", "wininit.exe",
         "services.exe", "lsass.exe", "dwm.exe", "explorer.exe",
+        # Linux
+        "systemd", "init", "kthreadd", "sshd",
     ]
 
     # ── Личность ──
@@ -148,6 +154,7 @@ class KristinaConfig(BaseSettings):
     cpu_warning_threshold: int = 85
     ram_warning_threshold: int = 90
     gpu_warning_threshold: int = 95
+    system_monitor_interval: int = 30
 
     # ── Логирование ──
     debug_mode: bool = False
@@ -327,7 +334,7 @@ _COMPUTED_MAP = {
     "OLLAMA_GPU_HOST": lambda: config.ollama_hosts.gpu,
     "OLLAMA_CPU_HOST": lambda: config.ollama_hosts.cpu,
     "IDENTITY_DIR": lambda: config.base_dir / "core" / "identity_data",
-    "SYSTEM_MONITOR_INTERVAL": lambda: 30,
+    "SYSTEM_MONITOR_INTERVAL": lambda: config.system_monitor_interval,
 }
 
 
