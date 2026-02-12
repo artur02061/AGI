@@ -30,8 +30,8 @@ log = structlog.get_logger("kristina")
 
 # ── Rust/Python bridge ──
 from bridge import (
-    RUST_AVAILABLE, MemoryEngine, EmbeddingCache, EmotionAnalyzer,
-    ToolCallParser, ContextCompressor, ThreadTracker,
+    RUST_AVAILABLE, MemoryEngine, EmbeddingCache,
+    ContextCompressor, ThreadTracker,
 )
 
 
@@ -89,10 +89,6 @@ async def initialize_system():
     log.info("component_ready", name="EmbeddingCache",
              size=embedding_cache.len(),
              backend="rust" if RUST_AVAILABLE else "python")
-
-    emotion_analyzer = EmotionAnalyzer()
-
-    tool_parser = ToolCallParser([])  # Заполнится после регистрации tools
 
     context_compressor = ContextCompressor(compression_ratio=0.3)
 
@@ -164,9 +160,6 @@ async def initialize_system():
         t = cls(memory) if cls == RecallMemoryTool else cls(vector_memory)
         tools[t.schema.name] = t.execute
 
-    # Обновляем парсер с известными инструментами
-    tool_parser.set_known_tools(list(tools.keys()))
-
     log.info("tools_registered", count=len(tools))
 
     # ── Агент / Оркестратор ──
@@ -196,13 +189,16 @@ async def initialize_system():
             thread_memory=thread_tracker,
         )
 
+    # 2.5: Передаём consciousness-модули агенту для использования в промптах
+    agent.vad_emotions = vad_emotions
+    agent.self_awareness = self_awareness
+
     log.info("system_ready")
 
     return {
         "agent": agent,
         "memory": memory,
         "identity": identity,
-        "emotions": emotion_analyzer,
         "vad_emotions": vad_emotions,
         "metacognition": metacognition,
         "self_awareness": self_awareness,
@@ -265,8 +261,7 @@ async def process_input(user_input: str, components: dict) -> str:
             "💡 Примеры: «удали файл», «запусти Chrome», «найди информацию», «сколько времени»"
         )
 
-    # ── Эмоция ──
-    emotion = components["emotions"].analyze(text)
+    # ── Обновление состояния ──
     components["identity"].increment_conversation_depth()
 
     # ── Обработка через агента ──
@@ -282,6 +277,11 @@ async def process_input(user_input: str, components: dict) -> str:
     vad = components.get("vad_emotions")
     if vad:
         vad.update_from_dialogue(text, response, had_errors=had_errors)
+        # 2.4: VAD → Identity mood sync
+        components["identity"].update_mood(vad.mood)
+
+    # 2.2: Эволюция личности на основе взаимодействия
+    components["identity"].analyze_interaction(text, response)
 
     sa = components.get("self_awareness")
     if sa:

@@ -311,11 +311,25 @@ class AgentCore:
                 "⚠️ КРИТИЧЕСКИ ВАЖНО: ОТВЕЧАЙ ТОЛЬКО НА РУССКОМ ЯЗЫКЕ!\n"
             )
 
+        # Self-awareness narrative (2.5)
+        awareness_str = ""
+        if hasattr(self, 'self_awareness') and self.self_awareness:
+            narrative = self.self_awareness.get_narrative_summary()
+            if narrative:
+                awareness_str = f"\n{narrative}"
+
+        # VAD emotional style
+        vad_str = ""
+        if hasattr(self, 'vad_emotions') and self.vad_emotions:
+            style = self.vad_emotions.get_response_style()
+            vad_str = f"\nТон: {style.get('tone', 'neutral')} | Эмоция: {style.get('emotional_label', 'нейтрально')}"
+
         prompt = f"""{russian_instruction}Ты — Кристина, AI-ассистент.
 
 {thread_str}
 
 {memory_context}
+{awareness_str}
 
 ПРАВИЛА:
 1. Отвечай ТОЛЬКО на русском
@@ -324,7 +338,7 @@ class AgentCore:
 4. Для файлов используй ПОЛНЫЕ пути
 5. Отвечай кратко и по делу (3-5 предложений)
 
-Настроение: {self.identity.current_mood} | Энергия: {self.identity.energy_level}%
+Настроение: {self.identity.current_mood} | Энергия: {self.identity.energy_level}%{vad_str}
 """
 
         return prompt
