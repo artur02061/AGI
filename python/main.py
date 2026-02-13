@@ -100,45 +100,66 @@ async def initialize_system():
     from modules.system_control.controller import SystemController
     system_controller = SystemController()
 
-    # ── Инструменты ──
-    # Веб (web_tools.py — рабочие реализации, без дубликатов)
-    from tools.web_tools import WebSearchTool, WebFetchTool, GetWeatherTool, GetCurrentTimeTool, GetCurrencyRateTool
+    # ── Инструменты v6.1 (JARVIS Edition) ──
+
+    # Веб
+    from tools.web_tools import (
+        WebSearchTool, WebFetchTool, DownloadFileTool,
+        GetWeatherTool, GetCurrentTimeTool, GetCurrencyRateTool,
+    )
     # Система
     from tools.system_tools import (
         SystemStatusTool, LaunchAppTool, ListProcessesTool, SearchAppsTool,
         KillProcessTool, OpenFileTool,
+        SystemInfoTool, DiskUsageTool, NetworkInfoTool,
+        RunCommandTool, ClipboardReadTool, ClipboardWriteTool, GetEnvTool,
     )
+    # Файлы
     from tools.file_tools import (
         SearchFilesTool, ReadFileTool, DeleteFileTool,
         ListDirectoryTool, CreateFileTool, WriteFileTool,
+        AppendFileTool, CopyFileTool, MoveFileTool, RenameFileTool,
+        FileInfoTool, CreateDirectoryTool, ArchiveTool, ExtractArchiveTool,
     )
-    from tools.memory_tools import RecallMemoryTool, SearchMemoryTool
+    # Память и заметки
+    from tools.memory_tools import (
+        RecallMemoryTool, SearchMemoryTool,
+        SaveNoteTool, ListNotesTool, DeleteNoteTool, ReadNoteTool,
+    )
 
     tools = {}
 
-    # Веб
-    for cls in [WebSearchTool, WebFetchTool]:
+    # --- Веб ---
+    for cls in [WebSearchTool, WebFetchTool, DownloadFileTool]:
         t = cls()
         tools[t.schema.name] = t.execute
 
-    # Система
+    # --- Время, погода, валюта ---
+    for cls in [GetCurrentTimeTool, GetWeatherTool, GetCurrencyRateTool]:
+        t = cls()
+        tools[t.schema.name] = t.execute
+
+    # --- Система (с контроллером) ---
     for cls in [SystemStatusTool, LaunchAppTool, ListProcessesTool,
                 SearchAppsTool, KillProcessTool, OpenFileTool]:
         t = cls(system_controller)
         tools[t.schema.name] = t.execute
 
-    # Время, погода, валюта (из web_tools)
-    for cls in [GetCurrentTimeTool, GetWeatherTool, GetCurrencyRateTool]:
+    # --- Система (без контроллера) ---
+    for cls in [SystemInfoTool, DiskUsageTool, NetworkInfoTool,
+                RunCommandTool, ClipboardReadTool, ClipboardWriteTool, GetEnvTool]:
         t = cls()
         tools[t.schema.name] = t.execute
 
-    # Файлы
+    # --- Файлы ---
     for cls in [SearchFilesTool, ReadFileTool, DeleteFileTool,
-                ListDirectoryTool, CreateFileTool, WriteFileTool]:
+                ListDirectoryTool, CreateFileTool, WriteFileTool,
+                AppendFileTool, CopyFileTool, MoveFileTool, RenameFileTool,
+                FileInfoTool, CreateDirectoryTool, ArchiveTool, ExtractArchiveTool]:
         t = cls(system_controller) if cls == SearchFilesTool else cls()
         tools[t.schema.name] = t.execute
 
-    # Память (передаём общий embedding cache для единого кэширования)
+    # --- Память ---
     from modules.rag.vector_store import VectorMemory
     vector_memory = VectorMemory(shared_embedding_cache=embedding_cache)
 
@@ -146,7 +167,12 @@ async def initialize_system():
         t = cls(memory) if cls == RecallMemoryTool else cls(vector_memory)
         tools[t.schema.name] = t.execute
 
-    log.info(f"Tools registered: {len(tools)}")
+    # --- Заметки ---
+    for cls in [SaveNoteTool, ListNotesTool, DeleteNoteTool, ReadNoteTool]:
+        t = cls()
+        tools[t.schema.name] = t.execute
+
+    log.info(f"Tools registered: {len(tools)} (JARVIS Edition v6.1)")
 
     # ── Агент / Оркестратор ──
     vram_manager = None
