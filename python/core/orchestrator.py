@@ -1,11 +1,15 @@
 """
 Orchestrator — координатор Multi-Agent системы
 
-v7.1 САМООБУЧЕНИЕ + НЕЙРОГЕНЕРАЦИЯ:
+v7.2 ЭВОЛЮЦИЯ К ПОНИМАНИЮ:
 - IntentRouter (Tier 1+2) вместо LLM для роутинга
 - ResponseGenerator вместо LLM для синтеза ответов
 - LearnedPatterns — каждый LLM-вызов обучает Кристину
 - NeuralEngine — Word2Vec + N-gram: Кристина строит СВОИ предложения
+- BPE Tokenizer — подсловная токенизация (морфология русского языка)
+- SentenceEmbeddings — понимание ФРАЗ, а не только слов
+- ActiveLearning — умная неуверенность (лучше спросить, чем ошибиться)
+- KnowledgeDistillation — сохранение ПРОЦЕССА рассуждений LLM
 - LLM = учитель, вызывается только когда алгоритмы не справляются
 """
 
@@ -22,6 +26,10 @@ from core.learned_patterns import LearnedPatterns
 from core.intent_router import IntentRouter
 from core.response_generator import ResponseGenerator
 from core.dialogue_engine import DialogueEngine
+from core.bpe_tokenizer import BPETokenizer
+from core.sentence_embeddings import SentenceEmbeddings
+from core.active_learning import ActiveLearning
+from core.knowledge_distillation import KnowledgeDistillation
 
 from utils.logging import get_logger
 import config
@@ -32,13 +40,19 @@ class Orchestrator:
     """
     Оркестратор — управляет всей Multi-Agent системой
 
-    v7.0: Трёхуровневая архитектура самообучения:
+    v7.2: Четырёхуровневая архитектура:
       Tier 1: LearnedPatterns  — выученные у LLM паттерны (<10мс)
       Tier 2: RuleEngine       — regex правила (<5мс)
-      Tier 3: LLM fallback     — director.analyze_request() (~25с)
+      Tier 3: KnowledgeDistillation — цепочки рассуждений (<50мс)
+      Tier 4: LLM fallback     — director.analyze_request() (~25с)
 
-    Каждый LLM-вызов (Tier 3) ОБУЧАЕТ Tier 1.
-    Со временем Tier 3 вызывается всё реже.
+    Новое в v7.2:
+      + BPE Tokenizer — подсловная токенизация для русской морфологии
+      + SentenceEmbeddings — понимание фраз целиком (не по словам)
+      + ActiveLearning — Кристина спрашивает, когда не уверена
+      + KnowledgeDistillation — запоминает КАК думает LLM, а не только ЧТО
+
+    Каждый LLM-вызов обучает ВСЕ компоненты.
     """
 
     def __init__(self, tools: Dict, memory, identity, vector_memory, thread_memory):
@@ -62,6 +76,19 @@ class Orchestrator:
         )
         self.response_generator = ResponseGenerator(self.learned_patterns)
         self.dialogue_engine = DialogueEngine()
+
+        # ── v7.2: Эволюционные компоненты ──
+        self.bpe_tokenizer = BPETokenizer()
+        self.sentence_embeddings = SentenceEmbeddings(
+            self.dialogue_engine.neural
+        )
+        self.active_learning = ActiveLearning(
+            neural_engine=self.dialogue_engine.neural,
+            sentence_embeddings=self.sentence_embeddings,
+        )
+        self.knowledge_distillation = KnowledgeDistillation(
+            sentence_embeddings=self.sentence_embeddings,
+        )
 
         # Агенты
         self.director = DirectorAgent(identity, tool_names=list(tools.keys()))
@@ -137,8 +164,13 @@ class Orchestrator:
             # === ШАГ 1: СТРОИМ КОНТЕКСТ ===
             context = await self._build_context(user_input)
 
-            # === ШАГ 2: ТРЁХУРОВНЕВЫЙ РОУТИНГ (v7.0) ===
+            # === ШАГ 2: ЧЕТЫРЁХУРОВНЕВЫЙ РОУТИНГ (v7.2) ===
             route = self.intent_router.route(user_input)
+
+            # v7.2: Оценка уверенности (ActiveLearning)
+            assessment = self.active_learning.assess_confidence(
+                user_input, route_result=route,
+            )
 
             if route:
                 # ── Tier 1 или Tier 2 сработал: БЕЗ LLM ──
@@ -158,12 +190,38 @@ class Orchestrator:
                     "reasoning": f"{tier} routing",
                 }
 
-                final_response = await self._process_with_plan(
-                    plan, user_input, context, route,
-                )
+                # v7.2: ActiveLearning может изменить поведение
+                if assessment["action"] == "clarify":
+                    # Кристина не уверена — спрашивает уточнение
+                    logger.info(f"❓ ActiveLearning: уточняю (conf={assessment['confidence']:.2f})")
+                    final_response = assessment["clarification"]
+                elif assessment["action"] == "uncertain":
+                    logger.info(f"❓ ActiveLearning: не уверена (conf={assessment['confidence']:.2f})")
+                    final_response = assessment["uncertainty_phrase"]
+                else:
+                    final_response = await self._process_with_plan(
+                        plan, user_input, context, route,
+                    )
+                    # Добавляем оговорку если нужно
+                    if assessment["action"] == "hedge":
+                        final_response += f"\n\n{assessment['hedge_phrase']}"
             else:
-                # ── Tier 3: LLM fallback ──
-                logger.info("🧠 Tier 3 (LLM): Директор анализирует запрос...")
+                # ── Tier 3: KnowledgeDistillation (цепочки рассуждений) ──
+                reasoning = self.knowledge_distillation.find_reasoning(user_input)
+
+                if reasoning and reasoning["confidence"] >= 0.7:
+                    # Нашли цепочку рассуждений — пробуем применить
+                    logger.info(
+                        f"🧪 Tier 3 (distillation): {len(reasoning['steps'])} шагов, "
+                        f"conf={reasoning['confidence']:.2f}"
+                    )
+                    self.stats["tier3_hits"] += 1
+                    # TODO: выполнение цепочки шагов автоматически
+                    # Пока логируем и падаем в LLM
+                    logger.info("🧪 Reasoning chain found but auto-execution not yet implemented")
+
+                # ── Tier 4: LLM fallback ──
+                logger.info("🧠 Tier 4 (LLM): Директор анализирует запрос...")
                 self.stats["tier3_hits"] += 1
 
                 plan = await self.director.analyze_request(user_input, context)
@@ -506,7 +564,7 @@ class Orchestrator:
         return context
 
     async def _save_to_memory(self, user_input: str, response: str, plan: Dict):
-        """Сохраняет диалог в память"""
+        """Сохраняет диалог в память + обучает v7.2 компоненты"""
 
         try:
             self.memory.add_to_working("user", user_input)
@@ -527,6 +585,29 @@ class Orchestrator:
             )
 
             self.thread_memory.update(user_input, response)
+
+            # ── v7.2: Обучение новых компонентов ──
+
+            # BPE Tokenizer: учится на каждом тексте
+            self.bpe_tokenizer.train_on_text(user_input)
+            self.bpe_tokenizer.train_on_text(response)
+
+            # SentenceEmbeddings: обновляет IDF статистику
+            self.sentence_embeddings.learn_from_text(user_input)
+            self.sentence_embeddings.learn_from_text(response)
+
+            # KnowledgeDistillation: дистиллирует LLM-ответы
+            intent = plan.get("intent", "unknown")
+            is_llm_response = plan.get("reasoning", "").startswith("Tier 3") or \
+                              plan.get("reasoning", "").startswith("Tier 4") or \
+                              "LLM" in plan.get("reasoning", "")
+            if is_llm_response and intent != "unknown":
+                self.knowledge_distillation.distill(
+                    user_input=user_input,
+                    llm_response=response,
+                    intent=intent,
+                    result_success=True,
+                )
 
         except Exception as e:
             logger.error(f"Ошибка сохранения в память: {e}")
@@ -565,5 +646,12 @@ class Orchestrator:
                 "tier1_hits": self.stats["tier1_hits"],
                 "tier2_hits": self.stats["tier2_hits"],
                 "tier3_hits": self.stats["tier3_hits"],
+            },
+            # v7.2: Статистика эволюционных компонентов
+            "evolution": {
+                "bpe_tokenizer": self.bpe_tokenizer.get_stats(),
+                "sentence_embeddings": self.sentence_embeddings.get_stats(),
+                "active_learning": self.active_learning.get_stats(),
+                "knowledge_distillation": self.knowledge_distillation.get_stats(),
             },
         }
