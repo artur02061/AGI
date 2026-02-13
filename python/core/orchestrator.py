@@ -32,6 +32,7 @@ from core.active_learning import ActiveLearning
 from core.knowledge_distillation import KnowledgeDistillation
 from core.micro_transformer import MicroTransformer
 from core.chain_of_thought import ChainOfThought
+from core.self_play import SelfPlay
 
 from utils.logging import get_logger
 import config
@@ -104,11 +105,24 @@ class Orchestrator:
             tools=tools,
         )
 
+        # ── v7.3: Self-Play (самооценка через LLM) ──
+        # Инициализируется после директора (нужен director для LLM-вызовов)
+        self._self_play_pending = True  # Ленивая инициализация
+
         # Агенты
         self.director = DirectorAgent(identity, tool_names=list(tools.keys()))
         self.executor = ExecutorAgent(tools)
         self.analyst = AnalystAgent(tools)
         self.reasoner = ReasonerAgent()
+
+        # Self-Play (инициализируем после director)
+        self.self_play = SelfPlay(
+            director=self.director,
+            learned_patterns=self.learned_patterns,
+            neural_engine=self.dialogue_engine._neural if hasattr(self.dialogue_engine, '_neural') else None,
+            knowledge_distillation=self.knowledge_distillation,
+            chain_of_thought=self.chain_of_thought,
+        )
 
         self.agents = {
             "director": self.director,
@@ -168,6 +182,12 @@ class Orchestrator:
         logger.info(
             f"🧠 ChainOfThought: {cot_stats['total_reasonings']} рассуждений, "
             f"{cot_stats['success_rate']}% успех"
+        )
+        sp_stats = self.self_play.get_stats()
+        logger.info(
+            f"🎮 SelfPlay: {sp_stats['total_evaluations']} оценок, "
+            f"avg={sp_stats['avg_score']}/10, "
+            f"reinforce={sp_stats['reinforce_rate']}%"
         )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
@@ -670,9 +690,10 @@ class Orchestrator:
 
             # KnowledgeDistillation: дистиллирует LLM-ответы
             intent = plan.get("intent", "unknown")
-            is_llm_response = plan.get("reasoning", "").startswith("Tier 3") or \
-                              plan.get("reasoning", "").startswith("Tier 4") or \
-                              "LLM" in plan.get("reasoning", "")
+            reasoning = plan.get("reasoning", "")
+            is_llm_response = reasoning.startswith("Tier 3") or \
+                              reasoning.startswith("Tier 4") or \
+                              "LLM" in reasoning
             if is_llm_response and intent != "unknown":
                 self.knowledge_distillation.distill(
                     user_input=user_input,
@@ -680,6 +701,22 @@ class Orchestrator:
                     intent=intent,
                     result_success=True,
                 )
+
+            # Self-Play: батчевая оценка ответов Tier 1-3 (без LLM)
+            is_own_response = reasoning.startswith("Tier 1") or \
+                              reasoning.startswith("Tier 2") or \
+                              reasoning.startswith("Tier 3 (CoT")
+            if is_own_response:
+                tier = "tier1" if "Tier 1" in reasoning else \
+                       "tier2" if "Tier 2" in reasoning else "tier3"
+                self.self_play.add_to_batch(user_input, response, source_tier=tier)
+
+                # Если буфер заполнился — запускаем батчевую оценку
+                if self.self_play.batch_ready:
+                    try:
+                        await self.self_play.evaluate_batch()
+                    except Exception as sp_err:
+                        logger.debug(f"SelfPlay batch eval deferred: {sp_err}")
 
         except Exception as e:
             logger.error(f"Ошибка сохранения в память: {e}")
@@ -727,5 +764,6 @@ class Orchestrator:
                 "knowledge_distillation": self.knowledge_distillation.get_stats(),
                 "micro_transformer": self.micro_transformer.get_stats(),
                 "chain_of_thought": self.chain_of_thought.get_stats(),
+                "self_play": self.self_play.get_stats(),
             },
         }

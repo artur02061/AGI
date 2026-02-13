@@ -475,7 +475,7 @@ WISH-014: Работа с изображениями (Vision)
     [V] WISH-004 — Мини-Трансформер → micro_transformer.py (1.5M params, 2L/4H/128d, RoPE, чистый Python)
     [V] WISH-009 — Авторегрессионная генерация → встроена в micro_transformer (Top-K/Top-P sampling)
     [V] WISH-006 — Chain-of-Thought движок → chain_of_thought.py (3 стратегии: template/decompose/analogy)
-    [ ] WISH-008 — Self-Play с LLM
+    [V] WISH-008 — Self-Play → self_play.py (online/batch/exam, reinforcement, threshold growth)
 
   Приоритет 3 (когда есть трансформер → ЕСТЬ!):
     [ ] WISH-005 — Cross-Attention с памятью
