@@ -30,6 +30,7 @@ from core.bpe_tokenizer import BPETokenizer
 from core.sentence_embeddings import SentenceEmbeddings
 from core.active_learning import ActiveLearning
 from core.knowledge_distillation import KnowledgeDistillation
+from core.micro_transformer import MicroTransformer
 
 from utils.logging import get_logger
 import config
@@ -90,6 +91,11 @@ class Orchestrator:
             sentence_embeddings=self.sentence_embeddings,
         )
 
+        # ── v7.2: MicroTransformer (Self-Attention) ──
+        self.micro_transformer = MicroTransformer(
+            vocab_size=max(self.bpe_tokenizer.get_vocab_size(), 8000),
+        )
+
         # Агенты
         self.director = DirectorAgent(identity, tool_names=list(tools.keys()))
         self.executor = ExecutorAgent(tools)
@@ -145,6 +151,11 @@ class Orchestrator:
                 f"{neural_stats.get('bigrams', 0)} биграмм, "
                 f"{neural_stats.get('training_steps', 0)} обучений"
             )
+        transformer_stats = self.micro_transformer.get_stats()
+        logger.info(
+            f"🤖 MicroTransformer: {transformer_stats['params']:,} params, "
+            f"{transformer_stats['training_steps']} steps"
+        )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
     async def process(self, user_input: str) -> str:
@@ -307,6 +318,24 @@ class Orchestrator:
             if dialogue_response:
                 logger.info("⚡ DialogueEngine: ответ без LLM")
                 return dialogue_response
+
+            # v7.2: Пробуем MicroTransformer (если обучен достаточно)
+            if self.micro_transformer._training_steps >= 50:
+                try:
+                    prompt_ids = self.bpe_tokenizer.encode(user_input)
+                    if prompt_ids and len(prompt_ids) >= 2:
+                        generated_ids = self.micro_transformer.generate(
+                            prompt_ids, max_len=40, temperature=0.8,
+                            top_k=30, top_p=0.9,
+                        )
+                        new_ids = generated_ids[len(prompt_ids):]
+                        if new_ids:
+                            transformer_response = self.bpe_tokenizer.decode(new_ids).strip()
+                            if len(transformer_response) >= 5:
+                                logger.info("🤖 MicroTransformer: ответ без LLM")
+                                return transformer_response
+                except Exception as e:
+                    logger.debug(f"MicroTransformer generation failed: {e}")
 
             # Fallback: LLM
             logger.info("🧠 Director (LLM): диалоговый ответ")
@@ -596,6 +625,17 @@ class Orchestrator:
             self.sentence_embeddings.learn_from_text(user_input)
             self.sentence_embeddings.learn_from_text(response)
 
+            # MicroTransformer: дообучение на каждом диалоге
+            try:
+                user_tokens = self.bpe_tokenizer.encode(user_input)
+                resp_tokens = self.bpe_tokenizer.encode(response)
+                if len(user_tokens) >= 3 and len(resp_tokens) >= 3:
+                    # Учим на связке: вопрос <SEP> ответ </S>
+                    combined = user_tokens + [4] + resp_tokens + [3]  # 4=<SEP>, 3=</S>
+                    self.micro_transformer.train_step(combined)
+            except Exception as e:
+                logger.debug(f"MicroTransformer training error: {e}")
+
             # KnowledgeDistillation: дистиллирует LLM-ответы
             intent = plan.get("intent", "unknown")
             is_llm_response = plan.get("reasoning", "").startswith("Tier 3") or \
@@ -653,5 +693,6 @@ class Orchestrator:
                 "sentence_embeddings": self.sentence_embeddings.get_stats(),
                 "active_learning": self.active_learning.get_stats(),
                 "knowledge_distillation": self.knowledge_distillation.get_stats(),
+                "micro_transformer": self.micro_transformer.get_stats(),
             },
         }
