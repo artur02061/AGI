@@ -43,7 +43,7 @@ class Orchestrator:
         self.vram_manager = VRAMManager()
         
         # Агенты
-        self.director = DirectorAgent(identity)
+        self.director = DirectorAgent(identity, tool_names=list(tools.keys()))
         self.executor = ExecutorAgent(tools)
         self.analyst = AnalystAgent(tools)
         self.reasoner = ReasonerAgent()
@@ -226,10 +226,19 @@ class Orchestrator:
         v6.0: Строит задачу для агента, включая контекст памяти.
         """
         
-        # Executor — передаём intent из плана директора как подсказку
+        # Executor — передаём intent из плана директора, но только если это реальный инструмент
         if agent_name == "executor":
+            intent = plan.get("intent")
+            # Валидация: если intent не существует в реальных инструментах,
+            # не передаём его — пусть executor определит инструмент из текста запроса
+            if intent and intent not in self.tools:
+                logger.warning(
+                    f"⚠️ Директор предложил несуществующий инструмент '{intent}', "
+                    f"executor определит инструмент из текста запроса"
+                )
+                intent = None
             return {
-                "tool": plan.get("intent"),
+                "tool": intent,
                 "args": [],
                 "user_input": user_input,
             }

@@ -22,7 +22,7 @@ class DirectorAgent(BaseAgent):
     Анализирует, планирует, делегирует, синтезирует.
     """
 
-    def __init__(self, identity):
+    def __init__(self, identity, tool_names: list = None):
         model_config = config.AGENT_MODELS["director"]
 
         super().__init__(
@@ -36,6 +36,7 @@ class DirectorAgent(BaseAgent):
         )
 
         self.identity = identity
+        self.tool_names = tool_names or []
 
     def _extract_json_from_text(self, text: str) -> dict:
         """Универсальный парсер JSON из текста с markdown"""
@@ -67,6 +68,15 @@ class DirectorAgent(BaseAgent):
     async def analyze_request(self, user_input: str, context: str = "") -> Dict[str, Any]:
         """Анализирует запрос и составляет план"""
 
+        # Формируем список инструментов для промпта
+        tools_block = ""
+        if self.tool_names:
+            tools_list = ", ".join(self.tool_names)
+            tools_block = f"""
+Доступные инструменты executor (используй ТОЛЬКО эти имена в поле "intent"):
+{tools_list}
+"""
+
         prompt = f"""Проанализируй запрос пользователя и составь план выполнения.
 
 Запрос: "{user_input}"
@@ -78,16 +88,18 @@ class DirectorAgent(BaseAgent):
 - analyst: анализ данных, веб-поиск
 - reasoner: математика, логика
 - director: диалоги, координация, творчество
-
+{tools_block}
 ПРАВИЛА:
-1. Простые действия (удалить файл, запустить) → executor
+1. Простые действия (удалить файл, создать файл, запустить приложение) → executor
 2. Поиск информации/веб → analyst
 3. Математика/логика → reasoner
 4. Диалоги, советы, обсуждения → director
+5. Поле "intent" ДОЛЖНО содержать ТОЧНОЕ имя инструмента из списка выше (например: create_file, delete_file, launch_app)
+6. НЕ ПРИДУМЫВАЙ имена инструментов! Используй ТОЛЬКО из списка.
 
 Ответь СТРОГО в формате JSON:
 {{
-  "intent": "название_действия",
+  "intent": "точное_имя_инструмента_из_списка",
   "primary_agent": "имя_агента",
   "supporting_agents": [],
   "complexity": "simple",
