@@ -18,26 +18,15 @@ class ExecutorAgent(BaseAgent):
     def __init__(self, tools: Dict):
         # Получаем конфиг из config.py
         model_config = config.AGENT_MODELS["executor"]
-        
+
+        # Capabilities строятся динамически из реально зарегистрированных инструментов
         super().__init__(
             name="executor",
             model_config=model_config,
-            capabilities=[
-                "delete_file",
-                "read_file",
-                "list_directory",
-                "launch_app",
-                "system_status",
-                "list_processes",
-                "get_current_time",
-                "get_weather",
-                "search_files",
-                "create_file",
-                "write_file"
-            ],
+            capabilities=list(tools.keys()),
             description="Быстрый исполнитель системных команд"
         )
-        
+
         self.tools = tools
     
     async def execute(self, task: Dict[str, Any]) -> str:
