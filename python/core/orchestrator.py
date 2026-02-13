@@ -20,6 +20,7 @@ from core.vram_manager import VRAMManager
 from core.learned_patterns import LearnedPatterns
 from core.intent_router import IntentRouter
 from core.response_generator import ResponseGenerator
+from core.dialogue_engine import DialogueEngine
 
 from utils.logging import get_logger
 import config
@@ -59,6 +60,7 @@ class Orchestrator:
             tool_names=list(tools.keys()),
         )
         self.response_generator = ResponseGenerator(self.learned_patterns)
+        self.dialogue_engine = DialogueEngine()
 
         # Агенты
         self.director = DirectorAgent(identity, tool_names=list(tools.keys()))
@@ -97,10 +99,16 @@ class Orchestrator:
         }
 
         patterns_stats = self.learned_patterns.get_stats()
+        dialogue_stats = self.dialogue_engine.get_stats()
         logger.info(f"✅ Multi-Agent система готова (агентов: {len(self.agents)})")
         logger.info(
             f"🧠 LearnedPatterns: {patterns_stats['routing']} routing, "
             f"{patterns_stats['response']} response, {patterns_stats['slots']} slots"
+        )
+        logger.info(
+            f"💬 DialogueEngine: {dialogue_stats['phrases']} фраз "
+            f"({dialogue_stats['phrases_from_llm']} от LLM), "
+            f"{dialogue_stats['dialogues']} диалогов"
         )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
@@ -222,10 +230,34 @@ class Orchestrator:
         if (primary_agent == "director"
                 and plan.get("complexity") == "simple"
                 and not plan.get("supporting_agents")):
-            logger.info("⚡ Fast path: простой запрос → director напрямую")
-            return await self.director.execute(
+
+            # v7.0: Пробуем DialogueEngine (без LLM)
+            mood = self.identity.current_mood
+            energy = self.identity.energy_level
+            dialogue_response = self.dialogue_engine.generate_response(
+                user_input, mood=mood, energy=energy,
+            )
+
+            if dialogue_response:
+                logger.info("⚡ DialogueEngine: ответ без LLM")
+                return dialogue_response
+
+            # Fallback: LLM
+            logger.info("🧠 Director (LLM): диалоговый ответ")
+            llm_response = await self.director.execute(
                 {"type": "general", "input": user_input, "context": context},
             )
+
+            # ОБУЧЕНИЕ: записываем LLM-ответ для DialogueEngine
+            self.dialogue_engine.learn_from_dialogue(
+                user_input=user_input,
+                response=llm_response,
+                mood=mood,
+                source="llm",
+            )
+            logger.info("📝 DialogueEngine: learned from LLM response")
+
+            return llm_response
 
         # === EXECUTOR PATH: инструментальные задачи ===
         if primary_agent == "executor":
@@ -517,6 +549,7 @@ class Orchestrator:
             "vram": self.vram_manager.get_stats(),
             "learning": {
                 "patterns": self.learned_patterns.get_stats(),
+                "dialogue": self.dialogue_engine.get_stats(),
                 "llm_free_percent": round(llm_free_pct, 1),
                 "tier1_hits": self.stats["tier1_hits"],
                 "tier2_hits": self.stats["tier2_hits"],
