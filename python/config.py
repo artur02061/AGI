@@ -109,32 +109,62 @@ class KristinaConfig(BaseSettings):
     web_rate_limit: int = 10
 
     # ── Файловая система ──
-    file_access_mode: str = "safe"
-    file_search_max_depth: int = 4
-    file_search_max_results: int = 10
+    # v6.1: "full" — полный доступ, кроме ядерных/системных директорий
+    # "safe" — только домашняя директория
+    # "restricted" — только allowed_directories
+    file_access_mode: str = "full"
+    file_search_max_depth: int = 6
+    file_search_max_results: int = 20
+    file_read_max_size: int = 50000  # v6.1: максимум символов при чтении
+    # v6.1: Только критически важные системные директории
+    # /etc разрешён для чтения конфигов, /tmp для временных файлов
     blocked_directories: List[Path] = [
-        Path("/etc"),
         Path("/boot"),
         Path("/proc"),
         Path("/sys"),
         Path("/dev"),
+        Path("/run"),
         Path("C:/Windows/System32"),
+        Path("C:/Windows/SysWOW64"),
+    ]
+    # v6.1: Директории только для чтения (запись запрещена)
+    readonly_directories: List[Path] = [
+        Path("/etc"),
+        Path("/usr"),
+        Path("/bin"),
+        Path("/sbin"),
+        Path("/lib"),
+        Path("/lib64"),
+        Path("C:/Windows"),
     ]
     allowed_directories: List[Path] = []
     blocked_extensions: List[str] = [
-        # Windows
-        ".sys", ".dll", ".exe", ".msi", ".bat",
-        ".cmd", ".ps1", ".vbs", ".reg", ".scr",
-        # Linux/macOS
-        ".so", ".ko", ".deb", ".rpm",
+        # Только реально опасные системные файлы
+        ".sys", ".ko",
     ]
     protected_processes: List[str] = [
         # Windows
         "System", "csrss.exe", "wininit.exe",
-        "services.exe", "lsass.exe", "dwm.exe", "explorer.exe",
+        "services.exe", "lsass.exe", "dwm.exe",
         # Linux
         "systemd", "init", "kthreadd", "sshd",
     ]
+
+    # ── Shell / Команды (v6.1) ──
+    shell_enabled: bool = True
+    shell_timeout: int = 30  # секунд
+    shell_max_output: int = 10000  # символов
+    shell_blocked_commands: List[str] = [
+        "rm -rf /", "mkfs", "dd if=", ":(){:|:&};:",
+        "format c:", "del /f /s /q c:",
+    ]
+
+    # ── Загрузки (v6.1) ──
+    download_dir: Optional[Path] = None
+    download_max_size_mb: int = 500
+
+    # ── Заметки (v6.1) ──
+    notes_dir: Optional[Path] = None
 
     # ── Личность ──
     default_mood: str = "neutral"
@@ -187,10 +217,16 @@ class KristinaConfig(BaseSettings):
             self.vector_db_dir = self.data_dir / "vector_db"
         if self.knowledge_graph_dir is None:
             self.knowledge_graph_dir = self.data_dir / "knowledge_graph"
+        # v6.1
+        if self.download_dir is None:
+            self.download_dir = self.data_dir / "downloads"
+        if self.notes_dir is None:
+            self.notes_dir = self.data_dir / "notes"
 
         # Создаём директории
         for dir_path in [self.data_dir, self.memory_dir,
-                         self.vector_db_dir, self.knowledge_graph_dir]:
+                         self.vector_db_dir, self.knowledge_graph_dir,
+                         self.download_dir, self.notes_dir]:
             dir_path.mkdir(parents=True, exist_ok=True)
 
         return self
@@ -333,9 +369,18 @@ _COMPAT_MAP = {
     "GPU_WARNING_THRESHOLD": "gpu_warning_threshold",
     "BLOCKED_EXTENSIONS": "blocked_extensions",
     "BLOCKED_DIRECTORIES": "blocked_directories",
+    "READONLY_DIRECTORIES": "readonly_directories",
     "ALLOWED_DIRECTORIES": "allowed_directories",
     "PROTECTED_PROCESSES": "protected_processes",
     "SHORT_TERM_MEMORY_SIZE": "short_term_memory_size",
+    "FILE_READ_MAX_SIZE": "file_read_max_size",
+    "SHELL_ENABLED": "shell_enabled",
+    "SHELL_TIMEOUT": "shell_timeout",
+    "SHELL_MAX_OUTPUT": "shell_max_output",
+    "SHELL_BLOCKED_COMMANDS": "shell_blocked_commands",
+    "DOWNLOAD_DIR": "download_dir",
+    "DOWNLOAD_MAX_SIZE_MB": "download_max_size_mb",
+    "NOTES_DIR": "notes_dir",
 }
 
 # Специальные computed-свойства
