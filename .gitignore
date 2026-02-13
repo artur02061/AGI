@@ -1,0 +1,25 @@
+# Rust build artifacts
+rust_core/target/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.so
+*.pyd
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Data (runtime, not source)
+python/data/vector_db/
+python/data/*.log
+
+# OS
+.DS_Store
+Thumbs.db

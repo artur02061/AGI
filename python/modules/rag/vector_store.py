@@ -9,7 +9,6 @@
 - ✅ Убран дубликат modules/rag/memory.py
 """
 
-import json
 import hashlib
 import re
 from collections import Counter
@@ -18,6 +17,23 @@ from pathlib import Path
 from typing import List, Dict, Optional
 
 import ollama
+
+try:
+    import orjson
+
+    def _json_load(f):
+        return orjson.loads(f.read())
+
+    def _json_dump(obj, f):
+        f.write(orjson.dumps(obj))
+except ImportError:
+    import json
+
+    def _json_load(f):
+        return json.load(f)
+
+    def _json_dump(obj, f):
+        json.dump(obj, f)
 
 from utils.logging import get_logger
 import config
@@ -219,6 +235,115 @@ class VectorMemory:
 
         return formatted[:n_results]
 
+    async def search_async(
+        self,
+        query: str,
+        n_results: int = None,
+        filter_metadata: Optional[Dict] = None,
+        date_range: Optional[tuple] = None,
+    ) -> List[Dict]:
+        """Async семантический поиск — не блокирует event loop"""
+        if self.collection is None:
+            return []
+
+        n_results = n_results or config.VECTOR_SEARCH_RESULTS
+
+        query_embedding = await self._get_embedding_async(query)
+
+        where_filter = {}
+        if filter_metadata:
+            where_filter.update(filter_metadata)
+
+        try:
+            results = self.collection.query(
+                query_embeddings=[query_embedding],
+                n_results=min(n_results * 2, max(self.doc_counter, 1)),
+                where=where_filter if where_filter else None,
+            )
+        except Exception as e:
+            logger.error(f"❌ Ошибка поиска: {e}")
+            return []
+
+        formatted = []
+        if results["ids"] and results["ids"][0]:
+            for i in range(len(results["ids"][0])):
+                meta = results["metadatas"][0][i]
+                result_date = meta.get("date", "")
+
+                if date_range:
+                    from_date, to_date = date_range
+                    if not (from_date <= result_date <= to_date):
+                        continue
+
+                formatted.append({
+                    "id": results["ids"][0][i],
+                    "text": results["documents"][0][i],
+                    "metadata": meta,
+                    "distance": results["distances"][0][i] if "distances" in results else None,
+                })
+
+        formatted.sort(key=lambda x: (
+            x["distance"] if x["distance"] is not None else 1.0,
+            -x["metadata"].get("importance", 1),
+        ))
+
+        return formatted[:n_results]
+
+    async def add_dialogue_async(
+        self,
+        user_input: str,
+        assistant_response: str,
+        importance: int = 1,
+        metadata: Optional[Dict] = None,
+    ):
+        """Async сохранение диалога — не блокирует event loop"""
+        if self.collection is None:
+            logger.warning("⚠️ ChromaDB недоступен, диалог не сохранён")
+            return
+
+        text = f"Пользователь: {user_input}\nКристина: {assistant_response}"
+        now = datetime.now()
+
+        meta = {
+            "type": "dialogue",
+            "timestamp": now.isoformat(),
+            "date": now.strftime("%Y-%m-%d"),
+            "month": now.strftime("%Y-%m"),
+            "time": now.strftime("%H:%M"),
+            "importance": importance,
+            "user_input": user_input[:200],
+            "response_length": len(assistant_response),
+            "keywords": self._extract_keywords(text),
+            "category": self._classify_category(user_input),
+        }
+        if metadata:
+            for k, v in metadata.items():
+                if isinstance(v, (str, int, float, bool)):
+                    meta[k] = v
+                else:
+                    meta[k] = str(v)
+
+        # keywords needs to be a string for ChromaDB
+        if isinstance(meta["keywords"], list):
+            import json as _json
+            meta["keywords"] = _json.dumps(meta["keywords"], ensure_ascii=False)
+
+        embedding = await self._get_embedding_async(text)
+
+        doc_id = f"dialogue_{now.strftime('%Y%m%d_%H%M%S')}_{self.doc_counter}"
+        self.doc_counter += 1
+
+        try:
+            self.collection.add(
+                ids=[doc_id],
+                embeddings=[embedding],
+                documents=[text],
+                metadatas=[meta],
+            )
+            logger.debug(f"💾 Диалог сохранён: {doc_id}")
+        except Exception as e:
+            logger.error(f"❌ Ошибка сохранения диалога: {e}")
+
     def search_by_timeframe(
         self,
         query: str,
@@ -318,30 +443,71 @@ class VectorMemory:
             return [0.0] * config.EMBEDDING_DIM
 
     async def _get_embedding_async(self, text: str) -> List[float]:
-        """Async-safe embedding — не блокирует event loop"""
-        import asyncio
-        return await asyncio.to_thread(self._get_embedding, text)
+        """Async embedding через ollama.AsyncClient — не блокирует event loop"""
+        # Shared cache (Rust EmbeddingCacheAdapter)
+        if self._shared_cache is not None:
+            cached = self._shared_cache.get(text)
+            if cached is not None:
+                return cached
+
+            try:
+                _async_client = ollama.AsyncClient()
+                response = await _async_client.embeddings(
+                    model=config.EMBEDDING_MODEL,
+                    prompt=text,
+                )
+                embedding = response["embedding"]
+                self._shared_cache.put(text, embedding)
+                return embedding
+            except Exception as e:
+                logger.error(f"❌ Ошибка async embedding: {e}")
+                return [0.0] * config.EMBEDDING_DIM
+
+        # Local cache fallback
+        text_hash = hashlib.md5(text.encode()).hexdigest()
+
+        if config.EMBEDDING_CACHE_ENABLED and text_hash in self.embedding_cache:
+            return self.embedding_cache[text_hash]
+
+        try:
+            _async_client = ollama.AsyncClient()
+            response = await _async_client.embeddings(
+                model=config.EMBEDDING_MODEL,
+                prompt=text,
+            )
+            embedding = response["embedding"]
+
+            if config.EMBEDDING_CACHE_ENABLED:
+                self.embedding_cache[text_hash] = embedding
+                if len(self.embedding_cache) % 100 == 0:
+                    self._save_embedding_cache()
+
+            return embedding
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка async embedding: {e}")
+            return [0.0] * config.EMBEDDING_DIM
 
     def _load_embedding_cache(self):
-        """Загружает JSON кэш"""
+        """Загружает кэш (orjson ~5x быстрее stdlib json для больших файлов)"""
         if self._cache_path.exists():
             try:
-                with open(self._cache_path, "r", encoding="utf-8") as f:
-                    self.embedding_cache = json.load(f)
+                with open(self._cache_path, "rb") as f:
+                    self.embedding_cache = _json_load(f)
                 logger.info(f"✅ Кэш embeddings: {len(self.embedding_cache)} записей")
             except Exception as e:
                 logger.warning(f"⚠️ Ошибка загрузки кэша: {e}")
                 self.embedding_cache = {}
 
     def _save_embedding_cache(self):
-        """Сохраняет JSON кэш"""
+        """Сохраняет кэш (orjson ~5x быстрее stdlib json для больших файлов)"""
         try:
             if len(self.embedding_cache) > config.EMBEDDING_CACHE_MAX_SIZE:
                 items = list(self.embedding_cache.items())
                 self.embedding_cache = dict(items[-config.EMBEDDING_CACHE_MAX_SIZE:])
 
-            with open(self._cache_path, "w") as f:
-                json.dump(self.embedding_cache, f)
+            with open(self._cache_path, "wb") as f:
+                _json_dump(self.embedding_cache, f)
             logger.debug(f"💾 Кэш: {len(self.embedding_cache)} записей")
         except Exception as e:
             logger.error(f"❌ Ошибка сохранения кэша: {e}")

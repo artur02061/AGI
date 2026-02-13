@@ -90,8 +90,8 @@ class Orchestrator:
         logger.info(f"🎯 Обработка запроса: {user_input[:50]}...")
         
         try:
-            # === ШАГ 1: СТРОИМ КОНТЕКСТ ===
-            context = self._build_context(user_input)
+            # === ШАГ 1: СТРОИМ КОНТЕКСТ (async — embedding не блокирует event loop) ===
+            context = await self._build_context(user_input)
             
             # === ШАГ 2: ДИРЕКТОР АНАЛИЗИРУЕТ ===
             logger.info("🧠 Директор анализирует запрос...")
@@ -122,8 +122,8 @@ class Orchestrator:
                     user_input, plan, results, context=context
                 )
             
-            # === ШАГ 6: СОХРАНЕНИЕ ===
-            self._save_to_memory(user_input, final_response, plan)
+            # === ШАГ 6: СОХРАНЕНИЕ (async — embedding не блокирует event loop) ===
+            await self._save_to_memory(user_input, final_response, plan)
 
             elapsed = (datetime.now() - start_time).total_seconds()
             self.stats["successful_requests"] += 1
@@ -273,60 +273,60 @@ class Orchestrator:
             "context": context,
         }
     
-    def _build_context(self, user_input: str) -> str:
+    async def _build_context(self, user_input: str) -> str:
         """
         v6.0: Строит контекст из всех источников памяти.
-        
+
         Источники (по приоритету):
         1. Thread context (текущий разговор)
         2. Episodic memory + summaries (многоуровневый поиск)
         3. Knowledge Graph (факты о пользователе)
-        4. Vector memory (семантический поиск)
+        4. Vector memory (семантический поиск — async!)
         """
-        
+
         # 1. Релевантная память (v6.0: ищет по ВСЕМ эпизодам + summaries + KG)
         relevant_memory = self.memory.get_relevant_context(user_input, max_items=3)
-        
+
         # 2. Thread контекст (последние 3 сообщения)
         thread_context = ""
         if self.thread_memory.current_thread:
             thread = self.thread_memory.current_thread
             messages = thread.get('messages', [])[-3:]
-            
+
             if messages:
                 thread_context = f"\nТекущая тема: {thread['topic']}\n"
                 thread_context += "Последние сообщения:\n"
-                
+
                 for msg in messages:
                     thread_context += f"  Пользователь: {msg['user'][:80]}\n"
                     thread_context += f"  Кристина: {msg['assistant'][:80]}\n"
-        
-        # 3. Векторная память
-        vector_results = self.vector_memory.search(user_input, n_results=2)
+
+        # 3. Векторная память (async — не блокирует event loop!)
+        vector_results = await self.vector_memory.search_async(user_input, n_results=2)
         vector_context = ""
-        
+
         if vector_results:
             vector_context = "\nИз долговременной памяти:\n"
             for r in vector_results[:2]:
                 date = r['metadata'].get('date', '')
                 text = r['text'][:100]
                 vector_context += f"  [{date}] {text}...\n"
-        
+
         context = f"""Контекст:
 {relevant_memory}
 {thread_context}
 {vector_context}"""
-        
+
         return context
     
-    def _save_to_memory(self, user_input: str, response: str, plan: Dict):
-        """Сохраняет диалог в память"""
-        
+    async def _save_to_memory(self, user_input: str, response: str, plan: Dict):
+        """Сохраняет диалог в память (async — embedding не блокирует event loop)"""
+
         try:
             # Рабочая память
             self.memory.add_to_working("user", user_input)
             self.memory.add_to_working("assistant", response)
-            
+
             # Эпизодическая
             importance = 2 if plan.get("complexity") == "complex" else 1
             self.memory.add_episode(
@@ -335,17 +335,17 @@ class Orchestrator:
                 self.identity.current_mood,
                 importance
             )
-            
-            # Векторная
-            self.vector_memory.add_dialogue(
+
+            # Векторная (async — не блокирует event loop!)
+            await self.vector_memory.add_dialogue_async(
                 user_input,
                 response,
                 importance=importance
             )
-            
+
             # Thread
             self.thread_memory.update(user_input, response)
-        
+
         except Exception as e:
             logger.error(f"Ошибка сохранения в память: {e}")
     
