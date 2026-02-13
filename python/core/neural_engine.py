@@ -58,7 +58,7 @@ logger = get_logger("neural_engine")
 #               КОНСТАНТЫ
 # ═══════════════════════════════════════════════════════════════
 
-EMBEDDING_DIM = 64         # Размерность вектора слова
+EMBEDDING_DIM = 128        # Размерность вектора слова (v7.3: 64→128 для лучшего разделения смыслов)
 LEARNING_RATE = 0.025      # Скорость обучения
 MIN_LEARNING_RATE = 0.001  # Минимальная скорость
 WINDOW_SIZE = 3            # Окно контекста (±3 слова)
@@ -276,15 +276,29 @@ class NeuralEngine:
             "SELECT word, frequency, embedding FROM vocabulary"
         ).fetchall()
 
+        migrated = 0
         for row in rows:
             word = row["word"]
             self._word_freq[word] = row["frequency"]
             self._total_words += row["frequency"]
             if row["embedding"]:
                 try:
-                    self._embeddings_cache[word] = json.loads(row["embedding"])
+                    emb = json.loads(row["embedding"])
+                    # Миграция: расширяем старые вектора до EMBEDDING_DIM
+                    if len(emb) < EMBEDDING_DIM:
+                        extra = EMBEDDING_DIM - len(emb)
+                        emb.extend(
+                            (random.random() - 0.5) / EMBEDDING_DIM
+                            for _ in range(extra)
+                        )
+                        migrated += 1
+                    self._embeddings_cache[word] = emb
                 except (json.JSONDecodeError, TypeError):
                     pass
+
+        if migrated > 0:
+            logger.info(f"📏 Migrated {migrated} embeddings to {EMBEDDING_DIM}-dim")
+            self._save_all_embeddings()
 
         # Биграммы
         rows = self._conn.execute(
@@ -599,6 +613,16 @@ class NeuralEngine:
                     UPDATE vocabulary SET embedding = ?, updated_at = ?
                     WHERE word = ?
                 """, (json.dumps(emb), now, word))
+
+    def _save_all_embeddings(self):
+        """Сохраняет ВСЕ эмбеддинги (для миграции размерности)"""
+        now = time.time()
+        for word, emb in self._embeddings_cache.items():
+            self._conn.execute("""
+                UPDATE vocabulary SET embedding = ?, updated_at = ?
+                WHERE word = ?
+            """, (json.dumps(emb), now, word))
+        self._conn.commit()
 
     def _update_associations(self, words: List[str]):
         """Обновляет ассоциации между словами в одном предложении"""

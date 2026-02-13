@@ -1,7 +1,7 @@
 ================================================================================
   КРИСТИНА — ROADMAP ЭВОЛЮЦИИ К УРОВНЮ CLAUDE SONNET 4.5
   Дата: 2026-02-13
-  Версия: 7.1 -> 7.2 -> 7.3 (Трансформер реализован!)
+  Версия: 7.1 -> 7.2 -> 7.3 (Трансформер + CoT реализованы!)
 ================================================================================
 
 ТЕКУЩЕЕ СОСТОЯНИЕ
@@ -469,12 +469,12 @@ WISH-014: Работа с изображениями (Vision)
     [V] WISH-002 — Sentence Embeddings → sentence_embeddings.py
     [+] WISH-NEW — BPE Tokenizer → bpe_tokenizer.py
     [+] WISH-NEW — Active Learning → active_learning.py
-    [ ] WISH-003 — Расширение измерений до 128-256 (следующий шаг)
+    [V] WISH-003 — Расширение Word2Vec 64→128 dim + авто-миграция
 
   Приоритет 2 (РЕАЛИЗОВАНО — трансформер!):
     [V] WISH-004 — Мини-Трансформер → micro_transformer.py (1.5M params, 2L/4H/128d, RoPE, чистый Python)
     [V] WISH-009 — Авторегрессионная генерация → встроена в micro_transformer (Top-K/Top-P sampling)
-    [ ] WISH-006 — Chain-of-Thought движок
+    [V] WISH-006 — Chain-of-Thought движок → chain_of_thought.py (3 стратегии: template/decompose/analogy)
     [ ] WISH-008 — Self-Play с LLM
 
   Приоритет 3 (когда есть трансформер → ЕСТЬ!):

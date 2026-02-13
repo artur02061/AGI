@@ -31,6 +31,7 @@ from core.sentence_embeddings import SentenceEmbeddings
 from core.active_learning import ActiveLearning
 from core.knowledge_distillation import KnowledgeDistillation
 from core.micro_transformer import MicroTransformer
+from core.chain_of_thought import ChainOfThought
 
 from utils.logging import get_logger
 import config
@@ -96,6 +97,13 @@ class Orchestrator:
             vocab_size=max(self.bpe_tokenizer.get_vocab_size(), 8000),
         )
 
+        # ── v7.3: Chain-of-Thought (рассуждения без LLM) ──
+        self.chain_of_thought = ChainOfThought(
+            knowledge_distillation=self.knowledge_distillation,
+            sentence_embeddings=self.sentence_embeddings,
+            tools=tools,
+        )
+
         # Агенты
         self.director = DirectorAgent(identity, tool_names=list(tools.keys()))
         self.executor = ExecutorAgent(tools)
@@ -155,6 +163,11 @@ class Orchestrator:
         logger.info(
             f"🤖 MicroTransformer: {transformer_stats['params']:,} params, "
             f"{transformer_stats['training_steps']} steps"
+        )
+        cot_stats = self.chain_of_thought.get_stats()
+        logger.info(
+            f"🧠 ChainOfThought: {cot_stats['total_reasonings']} рассуждений, "
+            f"{cot_stats['success_rate']}% успех"
         )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
@@ -217,19 +230,38 @@ class Orchestrator:
                     if assessment["action"] == "hedge":
                         final_response += f"\n\n{assessment['hedge_phrase']}"
             else:
-                # ── Tier 3: KnowledgeDistillation (цепочки рассуждений) ──
-                reasoning = self.knowledge_distillation.find_reasoning(user_input)
+                # ── Tier 3: Chain-of-Thought (рассуждения без LLM) ──
+                cot_result = self.chain_of_thought.reason(
+                    user_input, context=context,
+                )
 
-                if reasoning and reasoning["confidence"] >= 0.7:
-                    # Нашли цепочку рассуждений — пробуем применить
+                if cot_result and cot_result.overall_confidence >= 0.6:
+                    # CoT справился — отвечаем без LLM!
                     logger.info(
-                        f"🧪 Tier 3 (distillation): {len(reasoning['steps'])} шагов, "
-                        f"conf={reasoning['confidence']:.2f}"
+                        f"🧠 Tier 3 (CoT/{cot_result.strategy}): "
+                        f"{len(cot_result.steps)} шагов, "
+                        f"conf={cot_result.overall_confidence:.2f}, "
+                        f"{cot_result.reasoning_time_ms:.0f}ms"
                     )
                     self.stats["tier3_hits"] += 1
-                    # TODO: выполнение цепочки шагов автоматически
-                    # Пока логируем и падаем в LLM
-                    logger.info("🧪 Reasoning chain found but auto-execution not yet implemented")
+                    final_response = cot_result.final_answer
+
+                    # Сохраняем в память и возвращаем
+                    plan = {
+                        "intent": "cot_reasoning",
+                        "primary_agent": "reasoner",
+                        "supporting_agents": [],
+                        "complexity": "simple",
+                        "reasoning": f"Tier 3 (CoT/{cot_result.strategy})",
+                    }
+                    await self._save_to_memory(user_input, final_response, plan)
+
+                    elapsed = (datetime.now() - start_time).total_seconds()
+                    self.stats["successful_requests"] += 1
+                    self.stats["total_time"] += elapsed
+                    self.stats["avg_time"] = self.stats["total_time"] / self.stats["successful_requests"]
+                    logger.info(f"✅ Запрос обработан за {elapsed:.2f}s (CoT, без LLM)")
+                    return final_response
 
                 # ── Tier 4: LLM fallback ──
                 logger.info("🧠 Tier 4 (LLM): Директор анализирует запрос...")
@@ -694,5 +726,6 @@ class Orchestrator:
                 "active_learning": self.active_learning.get_stats(),
                 "knowledge_distillation": self.knowledge_distillation.get_stats(),
                 "micro_transformer": self.micro_transformer.get_stats(),
+                "chain_of_thought": self.chain_of_thought.get_stats(),
             },
         }
