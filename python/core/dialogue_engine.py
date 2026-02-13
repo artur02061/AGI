@@ -1,5 +1,5 @@
 """
-Кристина 7.0 — DialogueEngine (Разговор без LLM)
+Кристина 7.1 — DialogueEngine (Разговор без LLM)
 
 КАК ЧЕЛОВЕК СТРОИТ ФРАЗЫ:
   1. Распознаёт ситуацию: "мне сказали привет"
@@ -29,7 +29,13 @@
   └──────────────┬───────────────────────────────┘
                  ↓
   ┌──────────────────────────────────────────────┐
-  │ 4. ResponseComposer                          │
+  │ 4. NeuralEngine (нейрогенерация)             │
+  │    Word2Vec + N-gram → строит НОВЫЕ фразы    │
+  │    из выученных слов, а не повторяет старые   │
+  └──────────────┬───────────────────────────────┘
+                 ↓
+  ┌──────────────────────────────────────────────┐
+  │ 5. ResponseComposer                          │
   │    Собирает ответ из блоков:                 │
   │    greeting + state + offer_help              │
   │    → "Привет! Всё отлично! Чем могу помочь?" │
@@ -39,8 +45,9 @@
   Когда LLM отвечает на диалог → DialogueEngine:
   1. Определяет ситуацию
   2. Разбирает ответ на фразы (phrase decomposition)
-  3. Сохраняет всё в SQLite
-  4. Следующий раз → отвечает сам
+  3. NeuralEngine обучает Word2Vec на каждом диалоге
+  4. Сохраняет всё в SQLite
+  5. Следующий раз → отвечает сам (включая НОВЫЕ фразы)
 """
 
 import sqlite3
@@ -52,6 +59,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple, Any
 
+from core.neural_engine import NeuralEngine
 from utils.logging import get_logger
 import config
 
@@ -277,11 +285,20 @@ class DialogueEngine:
         self._create_tables()
         self._seed_base_phrases()
 
+        # v7.1: NeuralEngine для генерации собственных предложений
+        self.neural = NeuralEngine()
+
         stats = self.get_stats()
+        neural_stats = self.neural.get_stats()
         logger.info(
             f"💬 DialogueEngine: {stats['phrases']} фраз, "
             f"{stats['dialogues']} диалогов, "
             f"{stats['situations']} ситуаций"
+        )
+        logger.info(
+            f"🧠 NeuralEngine: {neural_stats['vocabulary']} слов, "
+            f"{neural_stats['bigrams']} биграмм, "
+            f"{neural_stats['training_steps']} обучений"
         )
 
     def _create_tables(self):
@@ -431,7 +448,8 @@ class DialogueEngine:
         1. Распознаём ситуации
         2. Ищем похожий прошлый диалог (DialogueMemory)
         3. Собираем ответ из фраз (PhraseComposition)
-        4. Возвращаем None если не можем → LLM
+        4. Нейрогенерация — строим НОВОЕ предложение (NeuralEngine)
+        5. Возвращаем None если не можем → LLM
 
         Returns:
             str — готовый ответ, или None если нужен LLM.
@@ -454,6 +472,12 @@ class DialogueEngine:
         response = self._compose_response(situations, mood, energy)
         if response:
             logger.debug(f"✅ PhraseComposition hit")
+            return response
+
+        # ── Способ 3: Нейрогенерация (НОВЫЕ предложения) ──
+        response = self._neural_generate(situations, mood)
+        if response:
+            logger.debug(f"✅ NeuralGeneration: '{response[:60]}'")
             return response
 
         logger.debug(f"⚠️ DialogueEngine: не смог ответить на ситуации {situations}")
@@ -614,6 +638,39 @@ class DialogueEngine:
         return "neutral"
 
     # ═══════════════════════════════════════════════════════════════
+    #          НЕЙРОГЕНЕРАЦИЯ (v7.1 — строит НОВЫЕ предложения)
+    # ═══════════════════════════════════════════════════════════════
+
+    def _neural_generate(
+        self,
+        situations: List[str],
+        mood: str,
+    ) -> Optional[str]:
+        """
+        Генерирует ответ через NeuralEngine — НОВЫЕ предложения
+        из выученных слов, а не повторение запомненных фраз.
+
+        NeuralEngine строит предложения через:
+        - Word2Vec эмбеддинги (понимание значений слов)
+        - N-gram модель (какие слова идут после каких)
+        - Ситуационные seed-слова (начало генерации)
+        """
+        try:
+            response = self.neural.generate_response(
+                situations=situations,
+                mood=mood,
+                creativity=0.3,
+            )
+
+            if response and len(response) >= 5:
+                return response
+
+        except Exception as e:
+            logger.debug(f"NeuralEngine generation error: {e}")
+
+        return None
+
+    # ═══════════════════════════════════════════════════════════════
     #          ОБУЧЕНИЕ (LLM как учитель)
     # ═══════════════════════════════════════════════════════════════
 
@@ -687,6 +744,19 @@ class DialogueEngine:
 
         # 2. Разбираем ответ на фразы и добавляем в PhraseBank
         self._learn_phrases_from_response(response, situations, mood, source)
+
+        # 2.5 v7.1: NeuralEngine обучается на обоих текстах
+        try:
+            # Учим на реплике пользователя
+            self.neural.learn_from_text(
+                user_input, source="user", situations=situations,
+            )
+            # Учим на ответе (LLM или человека)
+            self.neural.learn_from_text(
+                response, source=source, situations=situations,
+            )
+        except Exception as e:
+            logger.debug(f"NeuralEngine learning error: {e}")
 
         # 3. Если ситуация была распознана — запоминаем для будущего
         if situations and keywords:
@@ -894,12 +964,16 @@ class DialogueEngine:
             "SELECT COUNT(*) as c FROM phrases WHERE source = 'llm'"
         ).fetchone()["c"]
 
+        neural_stats = self.neural.get_stats()
+
         return {
             "phrases": phrases,
             "phrases_from_llm": llm_phrases,
             "dialogues": dialogues,
             "situations": situations,
+            "neural": neural_stats,
         }
 
     def close(self):
+        self.neural.close()
         self._conn.close()

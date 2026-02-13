@@ -1,10 +1,11 @@
 """
 Orchestrator — координатор Multi-Agent системы
 
-v7.0 САМООБУЧЕНИЕ:
+v7.1 САМООБУЧЕНИЕ + НЕЙРОГЕНЕРАЦИЯ:
 - IntentRouter (Tier 1+2) вместо LLM для роутинга
 - ResponseGenerator вместо LLM для синтеза ответов
 - LearnedPatterns — каждый LLM-вызов обучает Кристину
+- NeuralEngine — Word2Vec + N-gram: Кристина строит СВОИ предложения
 - LLM = учитель, вызывается только когда алгоритмы не справляются
 """
 
@@ -110,6 +111,13 @@ class Orchestrator:
             f"({dialogue_stats['phrases_from_llm']} от LLM), "
             f"{dialogue_stats['dialogues']} диалогов"
         )
+        neural_stats = dialogue_stats.get("neural", {})
+        if neural_stats:
+            logger.info(
+                f"🧠 NeuralEngine: {neural_stats.get('vocabulary', 0)} слов, "
+                f"{neural_stats.get('bigrams', 0)} биграмм, "
+                f"{neural_stats.get('training_steps', 0)} обучений"
+            )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
     async def process(self, user_input: str) -> str:
@@ -543,13 +551,16 @@ class Orchestrator:
                 / total_routed * 100
             )
 
+        dialogue_stats = self.dialogue_engine.get_stats()
+
         return {
             "orchestrator": self.stats,
             "agents": agent_stats,
             "vram": self.vram_manager.get_stats(),
             "learning": {
                 "patterns": self.learned_patterns.get_stats(),
-                "dialogue": self.dialogue_engine.get_stats(),
+                "dialogue": dialogue_stats,
+                "neural": dialogue_stats.get("neural", {}),
                 "llm_free_percent": round(llm_free_pct, 1),
                 "tier1_hits": self.stats["tier1_hits"],
                 "tier2_hits": self.stats["tier2_hits"],
