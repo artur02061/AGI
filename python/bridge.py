@@ -59,20 +59,29 @@ except ImportError as e:
             return float(dot / (na * nb)) if na * nb > 1e-8 else 0.0
 
         def batch_cosine_similarity(query, documents, top_k=5):
+            if not documents:
+                return []
             q = np.asarray(query, dtype=np.float32)
             q_norm = np.linalg.norm(q)
             if q_norm < 1e-8:
                 return []
-            results = []
-            for i, doc in enumerate(documents):
-                d = np.asarray(doc, dtype=np.float32)
-                d_norm = np.linalg.norm(d)
-                if d_norm < 1e-8 or len(d) != len(q):
-                    continue
-                sim = float(np.dot(q, d) / (q_norm * d_norm))
-                results.append((i, sim))
-            results.sort(key=lambda x: x[1], reverse=True)
-            return results[:top_k]
+            # Vectorized: matrix multiply instead of per-doc loop (~10x faster)
+            doc_matrix = np.asarray(documents, dtype=np.float32)
+            doc_norms = np.linalg.norm(doc_matrix, axis=1)
+            # Mask out zero-norm docs
+            valid = doc_norms > 1e-8
+            if not np.any(valid):
+                return []
+            similarities = doc_matrix @ q / (doc_norms * q_norm)
+            # Apply mask: invalid docs get -inf
+            similarities[~valid] = -np.inf
+            # Get top-k indices via argpartition (O(n) instead of O(n log n))
+            k = min(top_k, int(np.sum(valid)))
+            if k <= 0:
+                return []
+            top_indices = np.argpartition(similarities, -k)[-k:]
+            top_indices = top_indices[np.argsort(similarities[top_indices])][::-1]
+            return [(int(i), float(similarities[i])) for i in top_indices]
 
     except ImportError:
         def cosine_similarity(a, b):

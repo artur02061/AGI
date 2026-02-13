@@ -99,7 +99,7 @@ class AgentCore:
         if self.thread_memory.current_thread:
             self.thread_memory.add_to_thread(user_input, final_response)
 
-        self._save_to_vector_memory(user_input, final_response)
+        await self._save_to_vector_memory(user_input, final_response)
 
         return final_response
 
@@ -114,7 +114,7 @@ class AgentCore:
         4. Повторяем до max_iterations
         """
 
-        system_prompt = self._build_system_prompt()
+        system_prompt = await self._build_system_prompt()
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -290,15 +290,15 @@ class AgentCore:
     #                  СИСТЕМНЫЙ ПРОМПТ
     # ═══════════════════════════════════════════════════════════
 
-    def _build_system_prompt(self) -> str:
+    async def _build_system_prompt(self) -> str:
         """
         v6.0: Упрощённый промпт.
         Не нужно объяснять формат ACTION:/FINAL_ANSWER: —
         модель сама вызывает tools через native API.
         """
 
-        # Контекст памяти
-        memory_context = self._build_memory_context()
+        # Контекст памяти (async — не блокирует event loop)
+        memory_context = await self._build_memory_context()
 
         # Thread контекст
         thread_str = ""
@@ -347,8 +347,8 @@ class AgentCore:
 
         return prompt
 
-    def _build_memory_context(self) -> str:
-        """Контекст из памяти"""
+    async def _build_memory_context(self) -> str:
+        """Контекст из памяти (async — embedding не блокирует event loop)"""
 
         lines = []
 
@@ -363,9 +363,9 @@ class AgentCore:
                 lines.append("⏱️ ТЕКУЩАЯ СЕССИЯ:")
                 lines.extend(recent)
 
-        # Векторная память
+        # Векторная память (async — не блокирует event loop!)
         if hasattr(self, '_current_query'):
-            results = self.vector_memory.search(
+            results = await self.vector_memory.search_async(
                 self._current_query,
                 n_results=2,
                 filter_metadata={"type": "dialogue"},
@@ -450,7 +450,7 @@ class AgentCore:
                 for key, _ in sorted_items[:20]:
                     del self.response_cache[key]
 
-    def _save_to_vector_memory(self, user_input: str, response: str):
+    async def _save_to_vector_memory(self, user_input: str, response: str):
         importance = min(3, 1 + self._request_tool_calls)
         metadata = {
             'tool_calls': self._request_tool_calls,
@@ -459,7 +459,7 @@ class AgentCore:
         if self.thread_memory.current_thread:
             metadata['thread'] = self.thread_memory.current_thread['topic']
 
-        self.vector_memory.add_dialogue(
+        await self.vector_memory.add_dialogue_async(
             user_input=user_input,
             assistant_response=response,
             importance=importance,
