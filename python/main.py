@@ -58,6 +58,9 @@ async def initialize_system():
         from ollama import AsyncClient
         client = AsyncClient()
         await client.list()
+        # Закрываем health-check клиент (предотвращает ResourceWarning)
+        if hasattr(client, '_client') and client._client:
+            await client._client.aclose()
         log.info("Ollama connected")
     except Exception as e:
         log.error(f"Ollama unavailable: {e}")
@@ -349,6 +352,14 @@ async def main():
 
     finally:
         log.info("Shutdown started")
+
+        # v7.4: Закрываем все async-соединения (предотвращает ResourceWarning)
+        agent = components.get("agent")
+        if agent and hasattr(agent, 'close'):
+            try:
+                await agent.close()
+            except Exception as e:
+                log.debug(f"Agent close error: {e}")
 
         # Сохранение
         components["memory"].save()

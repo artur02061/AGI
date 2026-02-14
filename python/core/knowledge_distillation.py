@@ -628,6 +628,98 @@ class KnowledgeDistillation:
         return adapted
 
     # ═══════════════════════════════════════════════════════════════
+    #               ВЕРИФИКАЦИЯ ЦЕПОЧЕК (v7.4)
+    # ═══════════════════════════════════════════════════════════════
+
+    def verify_chain(self, chain: Dict, user_input: str) -> Dict[str, Any]:
+        """
+        v7.4: Верифицирует цепочку рассуждений перед применением.
+
+        Проверяет:
+        1. Полноту (есть ли все шаги)
+        2. Консистентность (не противоречат ли шаги друг другу)
+        3. Релевантность (подходят ли шаги к текущему запросу)
+        4. Confidence decay (старые цепочки менее надёжны)
+
+        Returns:
+            {"valid": bool, "adjusted_confidence": float, "warnings": [...]}
+        """
+        if not chain or not chain.get("steps"):
+            return {"valid": False, "adjusted_confidence": 0.0, "warnings": ["Пустая цепочка"]}
+
+        steps = chain["steps"]
+        confidence = chain.get("confidence", 0.5)
+        warnings = []
+
+        # 1. Проверка полноты: минимум 2 шага
+        if len(steps) < 2:
+            warnings.append("Слишком мало шагов (< 2)")
+            confidence *= 0.7
+
+        # 2. Проверка на пустые или слишком короткие шаги
+        empty_steps = sum(1 for s in steps if len(s.get("text", "")) < 5)
+        if empty_steps > 0:
+            warnings.append(f"{empty_steps} пустых/коротких шагов")
+            confidence *= max(0.5, 1 - empty_steps * 0.2)
+
+        # 3. Проверка на дубликаты шагов
+        step_texts = [s.get("text", "").lower().strip() for s in steps]
+        unique_steps = set(step_texts)
+        if len(unique_steps) < len(step_texts):
+            warnings.append("Дублирующиеся шаги")
+            confidence *= 0.8
+
+        # 4. Проверка релевантности через keyword overlap
+        user_keywords = set(self._extract_keywords(user_input).split())
+        chain_keywords = set()
+        for s in steps:
+            chain_keywords.update(self._extract_keywords(s.get("text", "")).split())
+
+        if user_keywords and chain_keywords:
+            overlap = len(user_keywords & chain_keywords)
+            relevance = overlap / max(len(user_keywords), 1)
+            if relevance < 0.1:
+                warnings.append(f"Низкая релевантность ({relevance:.0%})")
+                confidence *= 0.6
+        else:
+            confidence *= 0.8
+
+        # 5. Проверка на незаполненные переменные {variable}
+        import re as _re
+        unfilled = 0
+        for s in steps:
+            text = s.get("text", "")
+            unfilled += len(_re.findall(r'\{[a-z_]+\}', text))
+        if unfilled > 0:
+            warnings.append(f"{unfilled} незаполненных переменных")
+            confidence *= max(0.5, 1 - unfilled * 0.1)
+
+        # 6. Confidence decay: цепочки старше 30 дней получают штраф
+        chain_id = chain.get("chain_id")
+        if chain_id and chain.get("source") == "exact":
+            row = self._conn.execute(
+                "SELECT last_used FROM reasoning_chains WHERE id = ?",
+                (chain_id,)
+            ).fetchone()
+            if row:
+                import time as _time
+                age_days = (_time.time() - row["last_used"]) / 86400
+                if age_days > 30:
+                    decay = max(0.5, 1 - (age_days - 30) / 90)
+                    warnings.append(f"Старая цепочка ({age_days:.0f} дней)")
+                    confidence *= decay
+
+        confidence = max(0.0, min(1.0, confidence))
+        valid = confidence >= 0.4 and len(warnings) < 4
+
+        return {
+            "valid": valid,
+            "adjusted_confidence": round(confidence, 3),
+            "warnings": warnings,
+            "original_confidence": chain.get("confidence", 0),
+        }
+
+    # ═══════════════════════════════════════════════════════════════
     #               ОБРАТНАЯ СВЯЗЬ
     # ═══════════════════════════════════════════════════════════════
 

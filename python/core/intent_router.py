@@ -1,19 +1,23 @@
 """
-Кристина 7.0 — IntentRouter (Трёхуровневый роутер)
+Кристина 7.4 — IntentRouter (Четырёхуровневый роутер)
 
 Заменяет LLM-вызов director.analyze_request() для большинства запросов.
 
-ТРИ УРОВНЯ (от быстрого к медленному):
+ЧЕТЫРЕ УРОВНЯ (от быстрого к медленному):
   Tier 1: LearnedPatterns — паттерны, выученные у LLM (<10мс)
   Tier 2: RuleEngine     — захардкоженные regex правила (<5мс)
+  Tier 2.5: EmbeddingClassifier — семантическое сходство (<50мс)
   Tier 3: LLM fallback   — director.analyze_request() (~25с)
 
-Каждый раз когда срабатывает Tier 3, результат ЗАПИСЫВАЕТСЯ
-в Tier 1 (LearnedPatterns). Со временем Tier 3 вызывается
-всё реже и реже.
+v7.4:
+  + Tier 2.5 — Intent classification на sentence embeddings
+    Хранит эталонные эмбеддинги для каждого intent-а.
+    Новый запрос сравнивается по cosine similarity.
+    Порог 0.75 — если ниже, идём в LLM.
 """
 
 import re
+import math
 from typing import Optional, Dict, List, Any
 
 from utils.logging import get_logger
@@ -21,26 +25,119 @@ from utils.logging import get_logger
 logger = get_logger("intent_router")
 
 
-class IntentRouter:
+class EmbeddingClassifier:
     """
-    Детерминированный роутер запросов.
-    Не использует LLM. Не использует нейросети.
-    Чистые алгоритмы: FTS5 поиск + regex паттерны.
+    Intent-классификатор на sentence embeddings.
+
+    Хранит центроиды (средние эмбеддинги) для каждого intent-а.
+    При классификации считает cosine similarity с каждым центроидом.
     """
 
-    def __init__(self, learned_patterns, tool_names: List[str] = None):
+    def __init__(self, similarity_threshold: float = 0.72):
+        self._threshold = similarity_threshold
+        # intent → {"centroid": [...], "count": N, "agent": "..."}
+        self._centroids: Dict[str, Dict] = {}
+        self._total_classified = 0
+
+    def add_example(self, intent: str, agent: str, embedding: List[float]):
+        """Добавляет пример для обучения центроида"""
+        if not embedding or all(v == 0 for v in embedding):
+            return
+
+        if intent not in self._centroids:
+            self._centroids[intent] = {
+                "centroid": list(embedding),
+                "count": 1,
+                "agent": agent,
+            }
+        else:
+            c = self._centroids[intent]
+            n = c["count"]
+            # Инкрементальное обновление центроида: running average
+            c["centroid"] = [
+                (old * n + new) / (n + 1)
+                for old, new in zip(c["centroid"], embedding)
+            ]
+            c["count"] = n + 1
+
+    def classify(self, embedding: List[float]) -> Optional[Dict[str, Any]]:
+        """
+        Классифицирует по cosine similarity с центроидами.
+
+        Returns:
+            Dict с intent/agent/confidence или None
+        """
+        if not embedding or not self._centroids:
+            return None
+
+        best_intent = None
+        best_sim = -1.0
+        best_agent = "director"
+
+        for intent, data in self._centroids.items():
+            sim = self._cosine_similarity(embedding, data["centroid"])
+            if sim > best_sim:
+                best_sim = sim
+                best_intent = intent
+                best_agent = data["agent"]
+
+        if best_sim >= self._threshold and best_intent:
+            self._total_classified += 1
+            return {
+                "intent": best_intent,
+                "agent": best_agent,
+                "confidence": round(best_sim, 3),
+                "source": "embedding",
+                "pattern_id": None,
+                "slots": {},
+            }
+
+        return None
+
+    @staticmethod
+    def _cosine_similarity(a: List[float], b: List[float]) -> float:
+        """Cosine similarity между двумя векторами"""
+        dot = sum(x * y for x, y in zip(a, b))
+        norm_a = math.sqrt(sum(x * x for x in a))
+        norm_b = math.sqrt(sum(x * x for x in b))
+        if norm_a < 1e-10 or norm_b < 1e-10:
+            return 0.0
+        return dot / (norm_a * norm_b)
+
+    def get_stats(self) -> Dict:
+        return {
+            "intents": len(self._centroids),
+            "total_classified": self._total_classified,
+            "examples": {k: v["count"] for k, v in self._centroids.items()},
+        }
+
+
+class IntentRouter:
+    """
+    Четырёхуровневый роутер запросов.
+    Tier 1-2: детерминированный (FTS5 + regex)
+    Tier 2.5: embedding-based classification (sentence similarity)
+    Tier 3: LLM fallback
+    """
+
+    def __init__(self, learned_patterns, tool_names: List[str] = None,
+                 sentence_embeddings=None):
         """
         Args:
             learned_patterns: LearnedPatterns instance (SQLite база паттернов)
             tool_names: список доступных инструментов для валидации
+            sentence_embeddings: SentenceEmbeddings для Tier 2.5
         """
         self.learned = learned_patterns
         self.tool_names = set(tool_names or [])
+        self._sentence_embeddings = sentence_embeddings
+        self._embedding_classifier = EmbeddingClassifier()
         self._build_rules()
 
         logger.info(
             f"🧭 IntentRouter: {len(self._rules)} правил, "
-            f"{len(self.tool_names)} инструментов"
+            f"{len(self.tool_names)} инструментов, "
+            f"embedding_classifier={'on' if sentence_embeddings else 'off'}"
         )
 
     def _build_rules(self):
@@ -273,9 +370,43 @@ class IntentRouter:
                 logger.debug(f"✅ Tier 2 (rule): {intent}")
                 return result
 
+        # ── Tier 2.5: Embedding-based classification (<50мс) ──
+        if self._sentence_embeddings:
+            try:
+                embedding = self._sentence_embeddings.encode(user_input)
+                if embedding:
+                    emb_result = self._embedding_classifier.classify(embedding)
+                    if emb_result:
+                        # Валидируем intent
+                        if (emb_result["agent"] != "executor" or
+                                emb_result["intent"] in self.tool_names or
+                                emb_result["intent"] in ("greeting", "explanation", "creative")):
+                            slots = self._extract_slots_by_rules(emb_result["intent"], user_input)
+                            emb_result["slots"] = slots
+                            logger.debug(
+                                f"✅ Tier 2.5 (embedding): {emb_result['intent']} "
+                                f"(sim={emb_result['confidence']:.2f})"
+                            )
+                            return emb_result
+            except Exception as e:
+                logger.debug(f"Tier 2.5 error: {e}")
+
         # ── Ничего не нашли → Tier 3 (LLM) ──
-        logger.debug(f"⚠️ Tier 1+2 miss, нужен LLM для: '{user_input[:50]}'")
+        logger.debug(f"⚠️ Tier 1+2+2.5 miss, нужен LLM для: '{user_input[:50]}'")
         return None
+
+    def learn_from_route(self, user_input: str, intent: str, agent: str):
+        """
+        v7.4: Обучает EmbeddingClassifier на каждом успешном роутинге.
+        Вызывается из orchestrator после каждого ответа.
+        """
+        if self._sentence_embeddings:
+            try:
+                embedding = self._sentence_embeddings.encode(user_input)
+                if embedding:
+                    self._embedding_classifier.add_example(intent, agent, embedding)
+            except Exception:
+                pass
 
     def _extract_slots_by_rules(self, intent: str, user_input: str) -> Dict[str, str]:
         """

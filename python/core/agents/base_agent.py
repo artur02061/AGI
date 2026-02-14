@@ -157,6 +157,15 @@ class BaseAgent(ABC):
         
         self.last_used = datetime.now()
     
+    async def close(self):
+        """Закрывает соединение с Ollama (предотвращает ResourceWarning)"""
+        try:
+            if hasattr(self.client, '_client') and self.client._client:
+                await self.client._client.aclose()
+                self.logger.debug(f"🔌 Соединение {self.name} закрыто")
+        except Exception:
+            pass
+
     def get_stats(self) -> Dict[str, Any]:
         """Возвращает статистику"""
         return {

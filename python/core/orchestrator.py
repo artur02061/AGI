@@ -82,6 +82,7 @@ class Orchestrator:
         self.intent_router = IntentRouter(
             self.learned_patterns,
             tool_names=list(tools.keys()),
+            sentence_embeddings=None,  # Подключим после инициализации SentenceEmbeddings
         )
         self.response_generator = ResponseGenerator(self.learned_patterns)
         self.dialogue_engine = DialogueEngine()
@@ -95,6 +96,9 @@ class Orchestrator:
             neural_engine=self.dialogue_engine.neural,
             sentence_embeddings=self.sentence_embeddings,
         )
+
+        # v7.4: Подключаем sentence embeddings к IntentRouter для Tier 2.5
+        self.intent_router._sentence_embeddings = self.sentence_embeddings
         self.knowledge_distillation = KnowledgeDistillation(
             sentence_embeddings=self.sentence_embeddings,
         )
@@ -852,6 +856,12 @@ class Orchestrator:
                 except Exception as e:
                     logger.debug(f"MoE training error: {e}")
 
+            # v7.4: Обучаем EmbeddingClassifier (Tier 2.5) на каждом роутинге
+            intent = plan.get("intent", "unknown")
+            primary_agent = plan.get("primary_agent", "director")
+            if intent != "unknown" and intent != "error":
+                self.intent_router.learn_from_route(user_input, intent, primary_agent)
+
             # KnowledgeDistillation: дистиллирует LLM-ответы
             intent = plan.get("intent", "unknown")
             reasoning = plan.get("reasoning", "")
@@ -899,6 +909,34 @@ class Orchestrator:
 
         except Exception as e:
             logger.error(f"Ошибка сохранения в память: {e}")
+
+    async def close(self):
+        """Корректно закрывает все соединения (предотвращает ResourceWarning)"""
+        logger.info("🔌 Закрытие соединений агентов...")
+        # Закрываем всех агентов
+        for name, agent in self.agents.items():
+            try:
+                await agent.close()
+            except Exception as e:
+                logger.debug(f"Ошибка закрытия {name}: {e}")
+
+        # Закрываем vector_memory async client
+        if hasattr(self.vector_memory, 'close'):
+            try:
+                await self.vector_memory.close()
+            except Exception as e:
+                logger.debug(f"Ошибка закрытия vector_memory: {e}")
+
+        # Закрываем SQLite-компоненты
+        for component_name in ('micro_transformer', 'self_play', 'knowledge_distillation'):
+            component = getattr(self, component_name, None)
+            if component and hasattr(component, 'close'):
+                try:
+                    component.close()
+                except Exception as e:
+                    logger.debug(f"Ошибка закрытия {component_name}: {e}")
+
+        logger.info("✅ Все соединения закрыты")
 
     def get_stats(self) -> Dict[str, Any]:
         """Статистика оркестратора"""
