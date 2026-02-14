@@ -483,7 +483,7 @@ WISH-014: Работа с изображениями (Vision)
 
   Приоритет 4 (продвинутые):
     [V] WISH-010 — Conditional Generation → conditional_gen.py (style/mood/topic/format, auto-detect, condition bias)
-    [ ] WISH-011 — Мета-обучение
+    [V] WISH-011 — Meta-Learning → meta_learning.py (adaptive LR, curriculum, performance tracking, recommendations)
     [V] WISH-012 — Mixture of Experts → mixture_of_experts.py (6 experts, Router, top-2 gating, load balancing)
     [V] WISH-013 — Code Understanding → code_understanding.py (AST-анализ, паттерны, code embeddings, explain)
 

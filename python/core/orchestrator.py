@@ -38,6 +38,7 @@ from core.task_planner import TaskPlanner
 from core.conditional_gen import ConditionalGeneration
 from core.mixture_of_experts import MixtureOfExperts
 from core.code_understanding import CodeUnderstanding
+from core.meta_learning import MetaLearner
 
 from utils.logging import get_logger
 import config
@@ -153,6 +154,9 @@ class Orchestrator:
         # ── v7.3: Code Understanding (понимание кода) ──
         self.code_understanding = CodeUnderstanding()
 
+        # ── v7.3: Meta-Learning (обучение обучению) ──
+        self.meta_learner = MetaLearner()
+
         self.agents = {
             "director": self.director,
             "executor": self.executor,
@@ -243,6 +247,14 @@ class Orchestrator:
         logger.info(
             f"💻 CodeUnderstanding: {cu_stats['total_analyses']} analyses, "
             f"{cu_stats['indexed_snippets']} indexed"
+        )
+        ml_stats = self.meta_learner.get_stats()
+        improving = sum(1 for c in ml_stats['components'].values() if c['trend'] == 'improving')
+        plateau = sum(1 for c in ml_stats['components'].values() if c['trend'] == 'plateau')
+        logger.info(
+            f"🧬 MetaLearner: {ml_stats['total_meta_steps']} steps, "
+            f"{improving}↑ {plateau}→, "
+            f"quality={ml_stats['performance']['avg_quality']:.3f}"
         )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
@@ -804,36 +816,40 @@ class Orchestrator:
             self.sentence_embeddings.learn_from_text(user_input)
             self.sentence_embeddings.learn_from_text(response)
 
-            # MicroTransformer: дообучение на каждом диалоге
-            try:
-                user_tokens = self.bpe_tokenizer.encode(user_input)
-                resp_tokens = self.bpe_tokenizer.encode(response)
-                if len(user_tokens) >= 3 and len(resp_tokens) >= 3:
-                    # Учим на связке: вопрос <SEP> ответ </S>
-                    combined = user_tokens + [4] + resp_tokens + [3]  # 4=<SEP>, 3=</S>
-                    self.micro_transformer.train_step(combined)
-            except Exception as e:
-                logger.debug(f"MicroTransformer training error: {e}")
+            # MicroTransformer: дообучение (мета-управляемое)
+            if self.meta_learner.should_train("micro_transformer"):
+                try:
+                    user_tokens = self.bpe_tokenizer.encode(user_input)
+                    resp_tokens = self.bpe_tokenizer.encode(response)
+                    if len(user_tokens) >= 3 and len(resp_tokens) >= 3:
+                        combined = user_tokens + [4] + resp_tokens + [3]
+                        loss = self.micro_transformer.train_step(combined)
+                        if isinstance(loss, (int, float)):
+                            self.meta_learner.report_loss("micro_transformer", loss)
+                except Exception as e:
+                    logger.debug(f"MicroTransformer training error: {e}")
 
-            # ConditionalGen: обучаем с условиями
-            try:
-                conditions = self.conditional_gen.detect_conditions(user_input)
-                self.conditional_gen.train(response, conditions)
-            except Exception as e:
-                logger.debug(f"ConditionalGen training error: {e}")
+            # ConditionalGen: обучаем с условиями (мета-управляемое)
+            if self.meta_learner.should_train("conditional_gen"):
+                try:
+                    conditions = self.conditional_gen.detect_conditions(user_input)
+                    self.conditional_gen.train(response, conditions)
+                except Exception as e:
+                    logger.debug(f"ConditionalGen training error: {e}")
 
-            # MoE: обучаем экспертов на паре input→response embeddings
-            try:
-                input_emb = self.sentence_embeddings.encode(user_input)
-                resp_emb = self.sentence_embeddings.encode(response[:200])
-                if input_emb and resp_emb:
-                    # Нормализуем до d_model MoE
-                    from core.mixture_of_experts import D_MODEL as MOE_D
-                    in_vec = (input_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
-                    tgt_vec = (resp_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
-                    self.moe.train_step(in_vec, tgt_vec)
-            except Exception as e:
-                logger.debug(f"MoE training error: {e}")
+            # MoE: обучаем экспертов (мета-управляемое)
+            if self.meta_learner.should_train("moe"):
+                try:
+                    input_emb = self.sentence_embeddings.encode(user_input)
+                    resp_emb = self.sentence_embeddings.encode(response[:200])
+                    if input_emb and resp_emb:
+                        from core.mixture_of_experts import D_MODEL as MOE_D
+                        in_vec = (input_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
+                        tgt_vec = (resp_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
+                        loss = self.moe.train_step(in_vec, tgt_vec)
+                        self.meta_learner.report_loss("moe", loss)
+                except Exception as e:
+                    logger.debug(f"MoE training error: {e}")
 
             # KnowledgeDistillation: дистиллирует LLM-ответы
             intent = plan.get("intent", "unknown")
@@ -864,6 +880,21 @@ class Orchestrator:
                         await self.self_play.evaluate_batch()
                     except Exception as sp_err:
                         logger.debug(f"SelfPlay batch eval deferred: {sp_err}")
+
+            # Meta-Learning: сообщаем о качестве и оптимизируем
+            try:
+                tier = "tier1" if "Tier 1" in reasoning else \
+                       "tier2" if "Tier 2" in reasoning else \
+                       "tier3" if "Tier 3" in reasoning else "tier4"
+                # Оценка качества: длина ответа + наличие смысла
+                quality = min(1.0, len(response) / 200) * 0.5 + 0.5
+                components = ["micro_transformer", "moe", "conditional_gen"]
+                if is_llm_response:
+                    components.append("knowledge_distillation")
+                self.meta_learner.report_response(quality, tier, components)
+                self.meta_learner.optimize_step()
+            except Exception as e:
+                logger.debug(f"MetaLearner step error: {e}")
 
         except Exception as e:
             logger.error(f"Ошибка сохранения в память: {e}")
@@ -917,5 +948,6 @@ class Orchestrator:
                 "conditional_gen": self.conditional_gen.get_stats(),
                 "mixture_of_experts": self.moe.get_stats(),
                 "code_understanding": self.code_understanding.get_stats(),
+                "meta_learner": self.meta_learner.get_stats(),
             },
         }
