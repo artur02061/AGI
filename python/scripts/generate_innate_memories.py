@@ -132,4 +132,3 @@ def generate_innate_memories():
 
 if __name__ == "__main__":
     generate_innate_memories()
-```

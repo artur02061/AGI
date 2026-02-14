@@ -131,7 +131,7 @@ class SentenceEmbeddings:
         self._doc_count = 0
 
         # Attention weights (Level 3) — обучаемые
-        self._embedding_dim = 64  # Совпадает с NeuralEngine EMBEDDING_DIM
+        self._embedding_dim = 128  # Совпадает с NeuralEngine EMBEDDING_DIM (v7.3: 64→128)
         self._attention_w: Optional[List[float]] = None  # Вектор внимания
 
         self._load_state()

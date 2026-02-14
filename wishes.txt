@@ -1,7 +1,7 @@
 ================================================================================
   КРИСТИНА — ROADMAP ЭВОЛЮЦИИ К УРОВНЮ CLAUDE SONNET 4.5
   Дата: 2026-02-13
-  Версия: 7.1 -> 7.2 -> 7.3 (Трансформер реализован!)
+  Версия: 7.1 -> 7.2 -> 7.3 (Приоритет 1-3 ПОЛНОСТЬЮ закрыт!)
 ================================================================================
 
 ТЕКУЩЕЕ СОСТОЯНИЕ
@@ -469,23 +469,23 @@ WISH-014: Работа с изображениями (Vision)
     [V] WISH-002 — Sentence Embeddings → sentence_embeddings.py
     [+] WISH-NEW — BPE Tokenizer → bpe_tokenizer.py
     [+] WISH-NEW — Active Learning → active_learning.py
-    [ ] WISH-003 — Расширение измерений до 128-256 (следующий шаг)
+    [V] WISH-003 — Расширение Word2Vec 64→128 dim + авто-миграция
 
   Приоритет 2 (РЕАЛИЗОВАНО — трансформер!):
     [V] WISH-004 — Мини-Трансформер → micro_transformer.py (1.5M params, 2L/4H/128d, RoPE, чистый Python)
     [V] WISH-009 — Авторегрессионная генерация → встроена в micro_transformer (Top-K/Top-P sampling)
-    [ ] WISH-006 — Chain-of-Thought движок
-    [ ] WISH-008 — Self-Play с LLM
+    [V] WISH-006 — Chain-of-Thought движок → chain_of_thought.py (3 стратегии: template/decompose/analogy)
+    [V] WISH-008 — Self-Play → self_play.py (online/batch/exam, reinforcement, threshold growth)
 
   Приоритет 3 (когда есть трансформер → ЕСТЬ!):
-    [ ] WISH-005 — Cross-Attention с памятью
-    [ ] WISH-007 — Планировщик задач
+    [V] WISH-005 — Cross-Attention → cross_attention.py (Multi-Head, gated, ChromaDB RAG внутри модели)
+    [V] WISH-007 — Task Planner → task_planner.py (дерево декомпозиции, topo-sort, 7 шаблонов)
 
   Приоритет 4 (продвинутые):
-    [ ] WISH-010 — Условная генерация
-    [ ] WISH-011 — Мета-обучение
-    [ ] WISH-012 — Mixture of Experts
-    [ ] WISH-013 — Понимание кода
+    [V] WISH-010 — Conditional Generation → conditional_gen.py (style/mood/topic/format, auto-detect, condition bias)
+    [V] WISH-011 — Meta-Learning → meta_learning.py (adaptive LR, curriculum, performance tracking, recommendations)
+    [V] WISH-012 — Mixture of Experts → mixture_of_experts.py (6 experts, Router, top-2 gating, load balancing)
+    [V] WISH-013 — Code Understanding → code_understanding.py (AST-анализ, паттерны, code embeddings, explain)
 
   Приоритет 5 (когда-нибудь):
     [ ] WISH-014 — Vision

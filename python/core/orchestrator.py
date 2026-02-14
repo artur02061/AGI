@@ -31,6 +31,14 @@ from core.sentence_embeddings import SentenceEmbeddings
 from core.active_learning import ActiveLearning
 from core.knowledge_distillation import KnowledgeDistillation
 from core.micro_transformer import MicroTransformer
+from core.chain_of_thought import ChainOfThought
+from core.self_play import SelfPlay
+from core.cross_attention import MemoryAugmentedContext
+from core.task_planner import TaskPlanner
+from core.conditional_gen import ConditionalGeneration
+from core.mixture_of_experts import MixtureOfExperts
+from core.code_understanding import CodeUnderstanding
+from core.meta_learning import MetaLearner
 
 from utils.logging import get_logger
 import config
@@ -96,11 +104,58 @@ class Orchestrator:
             vocab_size=max(self.bpe_tokenizer.get_vocab_size(), 8000),
         )
 
+        # ── v7.3: Chain-of-Thought (рассуждения без LLM) ──
+        self.chain_of_thought = ChainOfThought(
+            knowledge_distillation=self.knowledge_distillation,
+            sentence_embeddings=self.sentence_embeddings,
+            tools=tools,
+        )
+
+        # ── v7.3: Self-Play (самооценка через LLM) ──
+        # Инициализируется после директора (нужен director для LLM-вызовов)
+        self._self_play_pending = True  # Ленивая инициализация
+
         # Агенты
         self.director = DirectorAgent(identity, tool_names=list(tools.keys()))
         self.executor = ExecutorAgent(tools)
         self.analyst = AnalystAgent(tools)
         self.reasoner = ReasonerAgent()
+
+        # Self-Play (инициализируем после director)
+        self.self_play = SelfPlay(
+            director=self.director,
+            learned_patterns=self.learned_patterns,
+            neural_engine=self.dialogue_engine.neural if hasattr(self.dialogue_engine, 'neural') else None,
+            knowledge_distillation=self.knowledge_distillation,
+            chain_of_thought=self.chain_of_thought,
+        )
+
+        # ── v7.3: Cross-Attention с памятью (RAG внутри модели) ──
+        self.memory_attention = MemoryAugmentedContext(
+            vector_memory=vector_memory,
+            sentence_embeddings=self.sentence_embeddings,
+        )
+
+        # ── v7.3: Task Planner (декомпозиция задач) ──
+        self.task_planner = TaskPlanner(
+            knowledge_distillation=self.knowledge_distillation,
+            sentence_embeddings=self.sentence_embeddings,
+        )
+
+        # ── v7.3: Conditional Generation (условная генерация) ──
+        self.conditional_gen = ConditionalGeneration(
+            micro_transformer=self.micro_transformer,
+            bpe_tokenizer=self.bpe_tokenizer,
+        )
+
+        # ── v7.3: Mixture of Experts (специализированные эксперты) ──
+        self.moe = MixtureOfExperts()
+
+        # ── v7.3: Code Understanding (понимание кода) ──
+        self.code_understanding = CodeUnderstanding()
+
+        # ── v7.3: Meta-Learning (обучение обучению) ──
+        self.meta_learner = MetaLearner()
 
         self.agents = {
             "director": self.director,
@@ -156,6 +211,51 @@ class Orchestrator:
             f"🤖 MicroTransformer: {transformer_stats['params']:,} params, "
             f"{transformer_stats['training_steps']} steps"
         )
+        cot_stats = self.chain_of_thought.get_stats()
+        logger.info(
+            f"🧠 ChainOfThought: {cot_stats['total_reasonings']} рассуждений, "
+            f"{cot_stats['success_rate']}% успех"
+        )
+        sp_stats = self.self_play.get_stats()
+        logger.info(
+            f"🎮 SelfPlay: {sp_stats['total_evaluations']} оценок, "
+            f"avg={sp_stats['avg_score']}/10, "
+            f"reinforce={sp_stats['reinforce_rate']}%"
+        )
+        ca_stats = self.memory_attention.get_stats()
+        logger.info(
+            f"🔗 CrossAttention: {ca_stats['total_enrichments']} обогащений, "
+            f"gate={ca_stats['avg_gate']}"
+        )
+        tp_stats = self.task_planner.get_stats()
+        logger.info(
+            f"📋 TaskPlanner: {tp_stats['total_plans']} планов, "
+            f"{tp_stats['total_tasks_completed']} задач"
+        )
+        cg_stats = self.conditional_gen.get_stats()
+        logger.info(
+            f"🎭 ConditionalGen: {cg_stats['total_generations']} генераций, "
+            f"{cg_stats['condition_values']} условий"
+        )
+        moe_stats = self.moe.get_stats()
+        logger.info(
+            f"🧠 MoE: {moe_stats['num_experts']} experts, "
+            f"{moe_stats['total_forwards']} forwards, "
+            f"balance={moe_stats['balance_loss']:.4f}"
+        )
+        cu_stats = self.code_understanding.get_stats()
+        logger.info(
+            f"💻 CodeUnderstanding: {cu_stats['total_analyses']} analyses, "
+            f"{cu_stats['indexed_snippets']} indexed"
+        )
+        ml_stats = self.meta_learner.get_stats()
+        improving = sum(1 for c in ml_stats['components'].values() if c['trend'] == 'improving')
+        plateau = sum(1 for c in ml_stats['components'].values() if c['trend'] == 'plateau')
+        logger.info(
+            f"🧬 MetaLearner: {ml_stats['total_meta_steps']} steps, "
+            f"{improving}↑ {plateau}→, "
+            f"quality={ml_stats['performance']['avg_quality']:.3f}"
+        )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
     async def process(self, user_input: str) -> str:
@@ -174,6 +274,24 @@ class Orchestrator:
         try:
             # === ШАГ 1: СТРОИМ КОНТЕКСТ ===
             context = await self._build_context(user_input)
+
+            # === v7.3: Обогащение контекста памятью (Cross-Attention) ===
+            try:
+                enrichment = self.memory_attention.enrich(user_input)
+                if enrichment and enrichment["gate"] > 0.3:
+                    # Память релевантна — добавляем в контекст
+                    mem_snippets = [
+                        m["text"][:100] for m in enrichment["memories"][:3]
+                        if m["weight"] > 0.1
+                    ]
+                    if mem_snippets:
+                        context += "\n[Релевантная память]: " + "; ".join(mem_snippets)
+                        logger.debug(
+                            f"🔗 CrossAttn: gate={enrichment['gate']:.2f}, "
+                            f"добавлено {len(mem_snippets)} воспоминаний"
+                        )
+            except Exception as e:
+                logger.debug(f"CrossAttention enrichment skipped: {e}")
 
             # === ШАГ 2: ЧЕТЫРЁХУРОВНЕВЫЙ РОУТИНГ (v7.2) ===
             route = self.intent_router.route(user_input)
@@ -217,19 +335,38 @@ class Orchestrator:
                     if assessment["action"] == "hedge":
                         final_response += f"\n\n{assessment['hedge_phrase']}"
             else:
-                # ── Tier 3: KnowledgeDistillation (цепочки рассуждений) ──
-                reasoning = self.knowledge_distillation.find_reasoning(user_input)
+                # ── Tier 3: Chain-of-Thought (рассуждения без LLM) ──
+                cot_result = self.chain_of_thought.reason(
+                    user_input, context=context,
+                )
 
-                if reasoning and reasoning["confidence"] >= 0.7:
-                    # Нашли цепочку рассуждений — пробуем применить
+                if cot_result and cot_result.overall_confidence >= 0.6:
+                    # CoT справился — отвечаем без LLM!
                     logger.info(
-                        f"🧪 Tier 3 (distillation): {len(reasoning['steps'])} шагов, "
-                        f"conf={reasoning['confidence']:.2f}"
+                        f"🧠 Tier 3 (CoT/{cot_result.strategy}): "
+                        f"{len(cot_result.steps)} шагов, "
+                        f"conf={cot_result.overall_confidence:.2f}, "
+                        f"{cot_result.reasoning_time_ms:.0f}ms"
                     )
                     self.stats["tier3_hits"] += 1
-                    # TODO: выполнение цепочки шагов автоматически
-                    # Пока логируем и падаем в LLM
-                    logger.info("🧪 Reasoning chain found but auto-execution not yet implemented")
+                    final_response = cot_result.final_answer
+
+                    # Сохраняем в память и возвращаем
+                    plan = {
+                        "intent": "cot_reasoning",
+                        "primary_agent": "reasoner",
+                        "supporting_agents": [],
+                        "complexity": "simple",
+                        "reasoning": f"Tier 3 (CoT/{cot_result.strategy})",
+                    }
+                    await self._save_to_memory(user_input, final_response, plan)
+
+                    elapsed = (datetime.now() - start_time).total_seconds()
+                    self.stats["successful_requests"] += 1
+                    self.stats["total_time"] += elapsed
+                    self.stats["avg_time"] = self.stats["total_time"] / self.stats["successful_requests"]
+                    logger.info(f"✅ Запрос обработан за {elapsed:.2f}s (CoT, без LLM)")
+                    return final_response
 
                 # ── Tier 4: LLM fallback ──
                 logger.info("🧠 Tier 4 (LLM): Директор анализирует запрос...")
@@ -319,8 +456,20 @@ class Orchestrator:
                 logger.info("⚡ DialogueEngine: ответ без LLM")
                 return dialogue_response
 
-            # v7.2: Пробуем MicroTransformer (если обучен достаточно)
+            # v7.3: Conditional Generation (с учётом стиля/настроения)
             if self.micro_transformer._training_steps >= 50:
+                try:
+                    conditions = self.conditional_gen.detect_conditions(user_input, mood=mood)
+                    cond_response = self.conditional_gen.generate(
+                        prompt=user_input, conditions=conditions,
+                    )
+                    if cond_response and len(cond_response) >= 5:
+                        logger.info(f"🎭 ConditionalGen: {conditions} → ответ без LLM")
+                        return cond_response
+                except Exception as e:
+                    logger.debug(f"ConditionalGen failed: {e}")
+
+                # Fallback: raw MicroTransformer (без условий)
                 try:
                     prompt_ids = self.bpe_tokenizer.encode(user_input)
                     if prompt_ids and len(prompt_ids) >= 2:
@@ -359,6 +508,17 @@ class Orchestrator:
             return await self._executor_path(plan, user_input, context, route)
 
         # === FULL PATH: сложные задачи с несколькими агентами ===
+        # v7.3: TaskPlanner для декомпозиции сложных задач
+        if plan.get("complexity") == "complex":
+            try:
+                task_plan = self.task_planner.plan(user_input)
+                plan_text = self.task_planner.format_plan(task_plan)
+                logger.info(f"📋 TaskPlanner: {task_plan.total_tasks} подзадач")
+                # Добавляем план в контекст для LLM
+                context += f"\n[План выполнения]:\n{plan_text}"
+            except Exception as e:
+                logger.debug(f"TaskPlanner skipped: {e}")
+
         required_agents = [primary_agent] + plan.get("supporting_agents", [])
         await self.vram_manager.ensure_loaded(required_agents)
 
@@ -585,10 +745,41 @@ class Orchestrator:
                 text = r['text'][:100]
                 vector_context += f"  [{date}] {text}...\n"
 
+        # 4. Code Understanding: если пользователь прислал код
+        code_context = ""
+        try:
+            # Ищем блок кода в сообщении (```...``` или отступ)
+            import re as _re
+            code_match = _re.search(r'```(?:python)?\s*\n(.+?)```', user_input, _re.DOTALL)
+            if code_match:
+                code_snippet = code_match.group(1)
+                analysis = self.code_understanding.analyze_code(code_snippet)
+                if analysis and analysis.summary:
+                    code_context = f"\n[Анализ кода]: {analysis.summary}"
+                    if analysis.patterns:
+                        warnings = [p.message for p in analysis.patterns[:3]]
+                        code_context += "\n  Замечания: " + "; ".join(warnings)
+        except Exception:
+            pass
+
+        # 5. MoE routing: определяем доминирующего эксперта
+        moe_context = ""
+        try:
+            input_emb = self.sentence_embeddings.encode(user_input)
+            if input_emb:
+                from core.mixture_of_experts import D_MODEL as MOE_D
+                in_vec = (input_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
+                expert_name = self.moe.get_expert_for_text(user_input, in_vec)
+                moe_context = f"\nДоминирующий эксперт: {expert_name}"
+        except Exception:
+            pass
+
         context = f"""Контекст:
 {relevant_memory}
 {thread_context}
-{vector_context}"""
+{vector_context}
+{code_context}
+{moe_context}"""
 
         return context
 
@@ -625,22 +816,47 @@ class Orchestrator:
             self.sentence_embeddings.learn_from_text(user_input)
             self.sentence_embeddings.learn_from_text(response)
 
-            # MicroTransformer: дообучение на каждом диалоге
-            try:
-                user_tokens = self.bpe_tokenizer.encode(user_input)
-                resp_tokens = self.bpe_tokenizer.encode(response)
-                if len(user_tokens) >= 3 and len(resp_tokens) >= 3:
-                    # Учим на связке: вопрос <SEP> ответ </S>
-                    combined = user_tokens + [4] + resp_tokens + [3]  # 4=<SEP>, 3=</S>
-                    self.micro_transformer.train_step(combined)
-            except Exception as e:
-                logger.debug(f"MicroTransformer training error: {e}")
+            # MicroTransformer: дообучение (мета-управляемое)
+            if self.meta_learner.should_train("micro_transformer"):
+                try:
+                    user_tokens = self.bpe_tokenizer.encode(user_input)
+                    resp_tokens = self.bpe_tokenizer.encode(response)
+                    if len(user_tokens) >= 3 and len(resp_tokens) >= 3:
+                        combined = user_tokens + [4] + resp_tokens + [3]
+                        loss = self.micro_transformer.train_step(combined)
+                        if isinstance(loss, (int, float)):
+                            self.meta_learner.report_loss("micro_transformer", loss)
+                except Exception as e:
+                    logger.debug(f"MicroTransformer training error: {e}")
+
+            # ConditionalGen: обучаем с условиями (мета-управляемое)
+            if self.meta_learner.should_train("conditional_gen"):
+                try:
+                    conditions = self.conditional_gen.detect_conditions(user_input)
+                    self.conditional_gen.train(response, conditions)
+                except Exception as e:
+                    logger.debug(f"ConditionalGen training error: {e}")
+
+            # MoE: обучаем экспертов (мета-управляемое)
+            if self.meta_learner.should_train("moe"):
+                try:
+                    input_emb = self.sentence_embeddings.encode(user_input)
+                    resp_emb = self.sentence_embeddings.encode(response[:200])
+                    if input_emb and resp_emb:
+                        from core.mixture_of_experts import D_MODEL as MOE_D
+                        in_vec = (input_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
+                        tgt_vec = (resp_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
+                        loss = self.moe.train_step(in_vec, tgt_vec)
+                        self.meta_learner.report_loss("moe", loss)
+                except Exception as e:
+                    logger.debug(f"MoE training error: {e}")
 
             # KnowledgeDistillation: дистиллирует LLM-ответы
             intent = plan.get("intent", "unknown")
-            is_llm_response = plan.get("reasoning", "").startswith("Tier 3") or \
-                              plan.get("reasoning", "").startswith("Tier 4") or \
-                              "LLM" in plan.get("reasoning", "")
+            reasoning = plan.get("reasoning", "")
+            is_llm_response = reasoning.startswith("Tier 3") or \
+                              reasoning.startswith("Tier 4") or \
+                              "LLM" in reasoning
             if is_llm_response and intent != "unknown":
                 self.knowledge_distillation.distill(
                     user_input=user_input,
@@ -648,6 +864,37 @@ class Orchestrator:
                     intent=intent,
                     result_success=True,
                 )
+
+            # Self-Play: батчевая оценка ответов Tier 1-3 (без LLM)
+            is_own_response = reasoning.startswith("Tier 1") or \
+                              reasoning.startswith("Tier 2") or \
+                              reasoning.startswith("Tier 3 (CoT")
+            if is_own_response:
+                tier = "tier1" if "Tier 1" in reasoning else \
+                       "tier2" if "Tier 2" in reasoning else "tier3"
+                self.self_play.add_to_batch(user_input, response, source_tier=tier)
+
+                # Если буфер заполнился — запускаем батчевую оценку
+                if self.self_play.batch_ready:
+                    try:
+                        await self.self_play.evaluate_batch()
+                    except Exception as sp_err:
+                        logger.debug(f"SelfPlay batch eval deferred: {sp_err}")
+
+            # Meta-Learning: сообщаем о качестве и оптимизируем
+            try:
+                tier = "tier1" if "Tier 1" in reasoning else \
+                       "tier2" if "Tier 2" in reasoning else \
+                       "tier3" if "Tier 3" in reasoning else "tier4"
+                # Оценка качества: длина ответа + наличие смысла
+                quality = min(1.0, len(response) / 200) * 0.5 + 0.5
+                components = ["micro_transformer", "moe", "conditional_gen"]
+                if is_llm_response:
+                    components.append("knowledge_distillation")
+                self.meta_learner.report_response(quality, tier, components)
+                self.meta_learner.optimize_step()
+            except Exception as e:
+                logger.debug(f"MetaLearner step error: {e}")
 
         except Exception as e:
             logger.error(f"Ошибка сохранения в память: {e}")
@@ -694,5 +941,13 @@ class Orchestrator:
                 "active_learning": self.active_learning.get_stats(),
                 "knowledge_distillation": self.knowledge_distillation.get_stats(),
                 "micro_transformer": self.micro_transformer.get_stats(),
+                "chain_of_thought": self.chain_of_thought.get_stats(),
+                "self_play": self.self_play.get_stats(),
+                "cross_attention": self.memory_attention.get_stats(),
+                "task_planner": self.task_planner.get_stats(),
+                "conditional_gen": self.conditional_gen.get_stats(),
+                "mixture_of_experts": self.moe.get_stats(),
+                "code_understanding": self.code_understanding.get_stats(),
+                "meta_learner": self.meta_learner.get_stats(),
             },
         }
