@@ -37,6 +37,7 @@ from core.cross_attention import MemoryAugmentedContext
 from core.task_planner import TaskPlanner
 from core.conditional_gen import ConditionalGeneration
 from core.mixture_of_experts import MixtureOfExperts
+from core.code_understanding import CodeUnderstanding
 
 from utils.logging import get_logger
 import config
@@ -149,6 +150,9 @@ class Orchestrator:
         # ── v7.3: Mixture of Experts (специализированные эксперты) ──
         self.moe = MixtureOfExperts()
 
+        # ── v7.3: Code Understanding (понимание кода) ──
+        self.code_understanding = CodeUnderstanding()
+
         self.agents = {
             "director": self.director,
             "executor": self.executor,
@@ -234,6 +238,11 @@ class Orchestrator:
             f"🧠 MoE: {moe_stats['num_experts']} experts, "
             f"{moe_stats['total_forwards']} forwards, "
             f"balance={moe_stats['balance_loss']:.4f}"
+        )
+        cu_stats = self.code_understanding.get_stats()
+        logger.info(
+            f"💻 CodeUnderstanding: {cu_stats['total_analyses']} analyses, "
+            f"{cu_stats['indexed_snippets']} indexed"
         )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
@@ -724,7 +733,24 @@ class Orchestrator:
                 text = r['text'][:100]
                 vector_context += f"  [{date}] {text}...\n"
 
-        # 4. MoE routing: определяем доминирующего эксперта
+        # 4. Code Understanding: если пользователь прислал код
+        code_context = ""
+        try:
+            # Ищем блок кода в сообщении (```...``` или отступ)
+            import re as _re
+            code_match = _re.search(r'```(?:python)?\s*\n(.+?)```', user_input, _re.DOTALL)
+            if code_match:
+                code_snippet = code_match.group(1)
+                analysis = self.code_understanding.analyze_code(code_snippet)
+                if analysis and analysis.summary:
+                    code_context = f"\n[Анализ кода]: {analysis.summary}"
+                    if analysis.patterns:
+                        warnings = [p.message for p in analysis.patterns[:3]]
+                        code_context += "\n  Замечания: " + "; ".join(warnings)
+        except Exception:
+            pass
+
+        # 5. MoE routing: определяем доминирующего эксперта
         moe_context = ""
         try:
             input_emb = self.sentence_embeddings.encode(user_input)
@@ -740,6 +766,7 @@ class Orchestrator:
 {relevant_memory}
 {thread_context}
 {vector_context}
+{code_context}
 {moe_context}"""
 
         return context
@@ -889,5 +916,6 @@ class Orchestrator:
                 "task_planner": self.task_planner.get_stats(),
                 "conditional_gen": self.conditional_gen.get_stats(),
                 "mixture_of_experts": self.moe.get_stats(),
+                "code_understanding": self.code_understanding.get_stats(),
             },
         }
