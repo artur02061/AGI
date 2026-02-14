@@ -482,7 +482,7 @@ WISH-014: Работа с изображениями (Vision)
     [V] WISH-007 — Task Planner → task_planner.py (дерево декомпозиции, topo-sort, 7 шаблонов)
 
   Приоритет 4 (продвинутые):
-    [ ] WISH-010 — Условная генерация
+    [V] WISH-010 — Conditional Generation → conditional_gen.py (style/mood/topic/format, auto-detect, condition bias)
     [ ] WISH-011 — Мета-обучение
     [ ] WISH-012 — Mixture of Experts
     [ ] WISH-013 — Понимание кода

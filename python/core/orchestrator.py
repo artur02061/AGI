@@ -35,6 +35,7 @@ from core.chain_of_thought import ChainOfThought
 from core.self_play import SelfPlay
 from core.cross_attention import MemoryAugmentedContext
 from core.task_planner import TaskPlanner
+from core.conditional_gen import ConditionalGeneration
 
 from utils.logging import get_logger
 import config
@@ -138,6 +139,12 @@ class Orchestrator:
             sentence_embeddings=self.sentence_embeddings,
         )
 
+        # ── v7.3: Conditional Generation (условная генерация) ──
+        self.conditional_gen = ConditionalGeneration(
+            micro_transformer=self.micro_transformer,
+            bpe_tokenizer=self.bpe_tokenizer,
+        )
+
         self.agents = {
             "director": self.director,
             "executor": self.executor,
@@ -212,6 +219,11 @@ class Orchestrator:
         logger.info(
             f"📋 TaskPlanner: {tp_stats['total_plans']} планов, "
             f"{tp_stats['total_tasks_completed']} задач"
+        )
+        cg_stats = self.conditional_gen.get_stats()
+        logger.info(
+            f"🎭 ConditionalGen: {cg_stats['total_generations']} генераций, "
+            f"{cg_stats['condition_values']} условий"
         )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
@@ -413,8 +425,20 @@ class Orchestrator:
                 logger.info("⚡ DialogueEngine: ответ без LLM")
                 return dialogue_response
 
-            # v7.2: Пробуем MicroTransformer (если обучен достаточно)
+            # v7.3: Conditional Generation (с учётом стиля/настроения)
             if self.micro_transformer._training_steps >= 50:
+                try:
+                    conditions = self.conditional_gen.detect_conditions(user_input, mood=mood)
+                    cond_response = self.conditional_gen.generate(
+                        prompt=user_input, conditions=conditions,
+                    )
+                    if cond_response and len(cond_response) >= 5:
+                        logger.info(f"🎭 ConditionalGen: {conditions} → ответ без LLM")
+                        return cond_response
+                except Exception as e:
+                    logger.debug(f"ConditionalGen failed: {e}")
+
+                # Fallback: raw MicroTransformer (без условий)
                 try:
                     prompt_ids = self.bpe_tokenizer.encode(user_input)
                     if prompt_ids and len(prompt_ids) >= 2:
@@ -741,6 +765,13 @@ class Orchestrator:
             except Exception as e:
                 logger.debug(f"MicroTransformer training error: {e}")
 
+            # ConditionalGen: обучаем с условиями
+            try:
+                conditions = self.conditional_gen.detect_conditions(user_input)
+                self.conditional_gen.train(response, conditions)
+            except Exception as e:
+                logger.debug(f"ConditionalGen training error: {e}")
+
             # KnowledgeDistillation: дистиллирует LLM-ответы
             intent = plan.get("intent", "unknown")
             reasoning = plan.get("reasoning", "")
@@ -820,5 +851,6 @@ class Orchestrator:
                 "self_play": self.self_play.get_stats(),
                 "cross_attention": self.memory_attention.get_stats(),
                 "task_planner": self.task_planner.get_stats(),
+                "conditional_gen": self.conditional_gen.get_stats(),
             },
         }
