@@ -5,8 +5,11 @@ VRAM Manager v2.0 — Hybrid CPU+GPU - ИСПРАВЛЕННАЯ ВЕРСИЯ
 from typing import List, Dict, Set
 from datetime import datetime
 
+import warnings
 try:
-    import pynvml
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=FutureWarning, message=".*pynvml.*")
+        import pynvml
     NVML_AVAILABLE = True
 except ImportError:
     NVML_AVAILABLE = False

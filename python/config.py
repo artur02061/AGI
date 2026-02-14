@@ -45,10 +45,11 @@ class KristinaConfig(BaseSettings):
     knowledge_graph_dir: Optional[Path] = None  # v6.0
 
     # ── Модели ──
-    # Основная: gemma3-abliterated:12b — без цензуры, свободное самовыражение
-    # Качество идентично gemma3:12b, русский и tool calling сохранены
+    # Основная: gemma3-abliterated:4b — без цензуры, свободное самовыражение
+    # 4b версия: ~3GB VRAM, комфортно на 8GB GPU
     # Abliteration: удалён механизм отказов, сохранены все остальные способности
-    model: str = "huihui_ai/gemma3-abliterated:12b"
+    # Для 12b нужно 24GB+ RAM — не подходит для 8GB VRAM
+    model: str = "huihui_ai/gemma3-abliterated:4b"
 
     # Роутер: лёгкая модель для классификации запросов
     # Альтернатива: qwen3:1.7b (быстрее, но хуже русский)
@@ -189,7 +190,7 @@ class KristinaConfig(BaseSettings):
     multi_agent_enabled: bool = True
     hybrid_mode: bool = True
     max_vram_gb: float = 8.0
-    gpu_vram_reserved: float = 5.5
+    gpu_vram_reserved: float = 3.5
     enable_parallel_execution: bool = True
     max_parallel_agents: int = 3
     hot_loaded_agents: List[str] = ["director"]
@@ -272,11 +273,11 @@ class KristinaConfig(BaseSettings):
         cpu = self.ollama_hosts.cpu
         return {
             # Director: основной планировщик, GPU
-            # gemma3-abliterated:12b — без цензуры, свободный характер
-            # Тот же размер и VRAM что и gemma3:12b
+            # gemma3-abliterated:4b — без цензуры, свободный характер
+            # ~3GB VRAM, комфортно на 8GB GPU
             "director": AgentModelConfig(
-                name="huihui_ai/gemma3-abliterated:12b", device="gpu", host=gpu,
-                vram_mb=6000, priority=0, timeout=120
+                name="huihui_ai/gemma3-abliterated:4b", device="gpu", host=gpu,
+                vram_mb=3000, priority=0, timeout=120
             ),
             # Executor: выполняет tool calls, CPU
             # gemma3:4b — быстрый, достаточный для tool execution
