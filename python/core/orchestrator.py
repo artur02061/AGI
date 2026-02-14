@@ -33,6 +33,8 @@ from core.knowledge_distillation import KnowledgeDistillation
 from core.micro_transformer import MicroTransformer
 from core.chain_of_thought import ChainOfThought
 from core.self_play import SelfPlay
+from core.cross_attention import MemoryAugmentedContext
+from core.task_planner import TaskPlanner
 
 from utils.logging import get_logger
 import config
@@ -124,6 +126,18 @@ class Orchestrator:
             chain_of_thought=self.chain_of_thought,
         )
 
+        # ── v7.3: Cross-Attention с памятью (RAG внутри модели) ──
+        self.memory_attention = MemoryAugmentedContext(
+            vector_memory=vector_memory,
+            sentence_embeddings=self.sentence_embeddings,
+        )
+
+        # ── v7.3: Task Planner (декомпозиция задач) ──
+        self.task_planner = TaskPlanner(
+            knowledge_distillation=self.knowledge_distillation,
+            sentence_embeddings=self.sentence_embeddings,
+        )
+
         self.agents = {
             "director": self.director,
             "executor": self.executor,
@@ -189,6 +203,16 @@ class Orchestrator:
             f"avg={sp_stats['avg_score']}/10, "
             f"reinforce={sp_stats['reinforce_rate']}%"
         )
+        ca_stats = self.memory_attention.get_stats()
+        logger.info(
+            f"🔗 CrossAttention: {ca_stats['total_enrichments']} обогащений, "
+            f"gate={ca_stats['avg_gate']}"
+        )
+        tp_stats = self.task_planner.get_stats()
+        logger.info(
+            f"📋 TaskPlanner: {tp_stats['total_plans']} планов, "
+            f"{tp_stats['total_tasks_completed']} задач"
+        )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
     async def process(self, user_input: str) -> str:
@@ -207,6 +231,24 @@ class Orchestrator:
         try:
             # === ШАГ 1: СТРОИМ КОНТЕКСТ ===
             context = await self._build_context(user_input)
+
+            # === v7.3: Обогащение контекста памятью (Cross-Attention) ===
+            try:
+                enrichment = self.memory_attention.enrich(user_input)
+                if enrichment and enrichment["gate"] > 0.3:
+                    # Память релевантна — добавляем в контекст
+                    mem_snippets = [
+                        m["text"][:100] for m in enrichment["memories"][:3]
+                        if m["weight"] > 0.1
+                    ]
+                    if mem_snippets:
+                        context += "\n[Релевантная память]: " + "; ".join(mem_snippets)
+                        logger.debug(
+                            f"🔗 CrossAttn: gate={enrichment['gate']:.2f}, "
+                            f"добавлено {len(mem_snippets)} воспоминаний"
+                        )
+            except Exception as e:
+                logger.debug(f"CrossAttention enrichment skipped: {e}")
 
             # === ШАГ 2: ЧЕТЫРЁХУРОВНЕВЫЙ РОУТИНГ (v7.2) ===
             route = self.intent_router.route(user_input)
@@ -411,6 +453,17 @@ class Orchestrator:
             return await self._executor_path(plan, user_input, context, route)
 
         # === FULL PATH: сложные задачи с несколькими агентами ===
+        # v7.3: TaskPlanner для декомпозиции сложных задач
+        if plan.get("complexity") == "complex":
+            try:
+                task_plan = self.task_planner.plan(user_input)
+                plan_text = self.task_planner.format_plan(task_plan)
+                logger.info(f"📋 TaskPlanner: {task_plan.total_tasks} подзадач")
+                # Добавляем план в контекст для LLM
+                context += f"\n[План выполнения]:\n{plan_text}"
+            except Exception as e:
+                logger.debug(f"TaskPlanner skipped: {e}")
+
         required_agents = [primary_agent] + plan.get("supporting_agents", [])
         await self.vram_manager.ensure_loaded(required_agents)
 
@@ -765,5 +818,7 @@ class Orchestrator:
                 "micro_transformer": self.micro_transformer.get_stats(),
                 "chain_of_thought": self.chain_of_thought.get_stats(),
                 "self_play": self.self_play.get_stats(),
+                "cross_attention": self.memory_attention.get_stats(),
+                "task_planner": self.task_planner.get_stats(),
             },
         }
