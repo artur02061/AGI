@@ -45,9 +45,10 @@ class KristinaConfig(BaseSettings):
     knowledge_graph_dir: Optional[Path] = None  # v6.0
 
     # ── Модели ──
-    # Основная: gemma3:12b — хороша для русского, помещается в 8GB VRAM
-    # Альтернативы: qwen3:14b (лучше tool calling), llama4-scout:17b (лучший мультиагент)
-    model: str = "gemma3:12b"
+    # Основная: gemma3-abliterated:12b — без цензуры, свободное самовыражение
+    # Качество идентично gemma3:12b, русский и tool calling сохранены
+    # Abliteration: удалён механизм отказов, сохранены все остальные способности
+    model: str = "huihui_ai/gemma3-abliterated:12b"
 
     # Роутер: лёгкая модель для классификации запросов
     # Альтернатива: qwen3:1.7b (быстрее, но хуже русский)
@@ -271,10 +272,10 @@ class KristinaConfig(BaseSettings):
         cpu = self.ollama_hosts.cpu
         return {
             # Director: основной планировщик, GPU
-            # gemma3:12b — хороший русский, помещается в 8GB
-            # Альтернатива: qwen3:14b (лучше structured output)
+            # gemma3-abliterated:12b — без цензуры, свободный характер
+            # Тот же размер и VRAM что и gemma3:12b
             "director": AgentModelConfig(
-                name="gemma3:12b", device="gpu", host=gpu,
+                name="huihui_ai/gemma3-abliterated:12b", device="gpu", host=gpu,
                 vram_mb=6000, priority=0, timeout=120
             ),
             # Executor: выполняет tool calls, CPU
