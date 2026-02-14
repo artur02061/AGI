@@ -20,7 +20,7 @@ from pydantic import Field, model_validator
 
 class OllamaHost(BaseSettings):
     gpu: str = "http://localhost:11434"
-    cpu: str = "http://localhost:11435"
+    cpu: str = "http://localhost:11434"
 
 
 class AgentModelConfig(BaseSettings):

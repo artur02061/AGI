@@ -45,15 +45,18 @@ class ExecutorAgent(BaseAgent):
         _exec_start = _dt.now()
 
         tool_name = task.get("tool")
-        args = task.get("args", [])
+        args = task.get("args", {})
         user_input = task.get("user_input", "")
 
-        # Если tool не указан, пытаемся определить из user_input
-        if not tool_name and user_input:
+        # Если tool не указан или args пустые, пытаемся определить из user_input
+        args_empty = not args or args == {} or args == []
+        if user_input and (not tool_name or args_empty):
             detected = self._detect_tool_from_input(user_input)
             if detected:
-                tool_name = detected["tool"]
-                args = detected["args"]
+                if not tool_name:
+                    tool_name = detected["tool"]
+                if args_empty and detected.get("args"):
+                    args = detected["args"]
 
         if not tool_name:
             return "ERROR: Не указан инструмент для выполнения"

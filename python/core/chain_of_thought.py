@@ -369,6 +369,22 @@ class ChainOfThought:
         if not reasoning or reasoning["confidence"] < 0.5:
             return None
 
+        # v7.4: Верификация цепочки перед применением
+        verification = self._kd.verify_chain(reasoning, user_input)
+        if not verification["valid"]:
+            logger.debug(
+                f"🔍 KD chain rejected: warnings={verification['warnings']}, "
+                f"conf={verification['adjusted_confidence']:.2f}"
+            )
+            # Даём обратную связь что цепочка неудачная
+            self._kd.feedback(reasoning["chain_id"], useful=False, source=reasoning.get("source", "exact"))
+            return None
+
+        # Используем скорректированную уверенность
+        adjusted_conf = verification["adjusted_confidence"]
+        if adjusted_conf < 0.5:
+            return None
+
         chain = ThoughtChain(
             query=user_input,
             strategy="template",
@@ -383,13 +399,13 @@ class ChainOfThought:
                 action=step_data["text"],
                 observation="(из сохранённого опыта)",
                 conclusion=self._generate_conclusion(step_data, i, len(reasoning["steps"])),
-                confidence=reasoning["confidence"],
+                confidence=adjusted_conf,
             )
             chain.steps.append(step)
 
         # Собираем ответ из шагов
         chain.final_answer = self._compose_answer_from_steps(chain.steps, user_input)
-        chain.overall_confidence = reasoning["confidence"] * 0.9  # Чуть ниже — не проверяли
+        chain.overall_confidence = adjusted_conf * 0.9  # Чуть ниже — не проверяли
 
         logger.debug(
             f"🧠 CoT template: {len(chain.steps)} steps, "

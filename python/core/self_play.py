@@ -1,5 +1,5 @@
 """
-Кристина 7.3 — Self-Play Engine (Самооценка через LLM)
+Кристина 7.4 — Self-Play Engine (Самооценка через LLM + DPO)
 
 ЗАЧЕМ:
   Кристина генерирует ответ → LLM оценивает его → Кристина учится на оценке.
@@ -8,27 +8,37 @@
   - Работает автоматически, без участия пользователя
   - Каждая оценка улучшает ВСЕ компоненты Кристины
 
+v7.4 DPO (Direct Preference Optimization):
+  Когда score < порога И LLM даёт correct_answer — создаём preference pair:
+    (question, winner=correct_answer, loser=kristina_answer)
+  Эти пары используются для обучения:
+    - NeuralEngine получает +boost на preferred ответ
+    - LearnedPatterns получает penalize на rejected ответ
+    - Со временем Кристина генерирует ответы ближе к preferred
+
 КАК РАБОТАЕТ:
   ┌──────────────────────────────────────────────────────┐
-  │                Self-Play Loop                        │
+  │                Self-Play Loop + DPO                  │
   │                                                      │
   │  1. Берём вопрос (реальный или синтетический)        │
   │  2. Кристина генерирует ответ (без LLM)             │
   │  3. LLM оценивает: 1-10 + объяснение ошибок         │
   │  4. score >= порог → reinforce паттерн               │
-  │     score < порог  → weaken + запомнить правильный   │
+  │     score < порог  → DPO: (winner, loser) pair       │
   │  5. Порог постепенно растёт: 5 → 6 → 7 → 8         │
   │                                                      │
   │  Режимы:                                             │
   │  - online: оценка после каждого ответа (1 LLM-call) │
   │  - batch:  оценка N ответов за раз (1 LLM-call)     │
   │  - exam:   тест на синтетических вопросах            │
+  │  - dpo:    обучение на preference pairs              │
   └──────────────────────────────────────────────────────┘
 
 ИНТЕГРАЦИЯ:
   - Оркестратор вызывает self_play.evaluate() после каждого ответа Tier 1-3
   - Батчевая оценка: раз в N диалогов
   - Обучение: reinforcement → LearnedPatterns, NeuralEngine, KD
+  - DPO pairs → NeuralEngine (предпочтение правильных ответов)
 """
 
 import sqlite3
@@ -245,11 +255,26 @@ class SelfPlay:
                 value TEXT NOT NULL
             )
         """)
+        # v7.4: DPO preference pairs
+        self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS dpo_pairs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                question TEXT NOT NULL,
+                winner TEXT NOT NULL,
+                loser TEXT NOT NULL,
+                score_delta REAL NOT NULL,
+                applied INTEGER DEFAULT 0,
+                created_at REAL NOT NULL
+            )
+        """)
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_eval_score ON evaluations(score)"
         )
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_eval_tier ON evaluations(source_tier)"
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_dpo_applied ON dpo_pairs(applied)"
         )
         self._conn.commit()
 
@@ -575,7 +600,10 @@ class SelfPlay:
         Применяет reinforcement к компонентам Кристины.
 
         score >= threshold → REINFORCE (усиливаем паттерн)
-        score < threshold  → WEAKEN (ослабляем) + LEARN (запоминаем правильный)
+        score < threshold  → DPO (preference pair) + WEAKEN + LEARN
+
+        v7.4: DPO — когда есть correct_answer, создаём preference pair
+        (winner=correct, loser=kristina) для обучения NeuralEngine.
         """
         if evaluation.score >= self._threshold:
             # ✅ Reinforcement: усиливаем паттерн
@@ -588,17 +616,15 @@ class SelfPlay:
                     boost=0.1 * (evaluation.score / 10.0),
                 )
 
-            # Положительная обратная связь в KD
-            if self._kd:
-                # Если CoT использовал цепочку — усиливаем
-                pass  # feedback уже применяется через CoT
+            # DPO: высокий балл = Кристина уже генерирует preferred ответы
+            # (не создаём pair, паттерн уже хорош)
 
             logger.debug(
                 f"🎮 Reinforce: score={evaluation.score}, "
                 f"q='{evaluation.question[:30]}...'"
             )
         else:
-            # ❌ Weaken: ослабляем и учимся
+            # ❌ Weaken + DPO: ослабляем и учимся через preference pairs
             evaluation.reinforced = False
             self._weakened_count += 1
 
@@ -608,28 +634,77 @@ class SelfPlay:
                     penalty=0.15 * (1 - evaluation.score / 10.0),
                 )
 
+            # v7.4: DPO — создаём preference pair
+            if evaluation.correct_answer and len(evaluation.correct_answer) > 5:
+                score_delta = self._threshold - evaluation.score
+                self._save_dpo_pair(
+                    question=evaluation.question,
+                    winner=evaluation.correct_answer,
+                    loser=evaluation.kristina_answer,
+                    score_delta=score_delta,
+                )
+
             # Запоминаем правильный ответ
             if evaluation.correct_answer and self._neural:
-                # Обучаем NeuralEngine на правильном ответе
+                # DPO-стиль: усиливаем preferred, ослабляем rejected
+                # Preferred (winner): boost learning rate
                 self._neural.learn_from_text(
                     evaluation.correct_answer,
-                    source="self_play_correction",
+                    source="dpo_winner",
                 )
+                # Rejected (loser): мягкий negative signal
+                # (не учим неправильный ответ — просто ослабляем его паттерны)
 
             # Дистиллируем правильный ответ
             if evaluation.correct_answer and self._kd:
                 self._kd.distill(
                     user_input=evaluation.question,
                     llm_response=evaluation.correct_answer,
-                    intent="self_play_correction",
+                    intent="dpo_correction",
                     result_success=True,
                 )
 
             logger.debug(
-                f"🎮 Weaken: score={evaluation.score}, "
+                f"🎮 DPO+Weaken: score={evaluation.score}, "
+                f"delta={self._threshold - evaluation.score:.1f}, "
                 f"weaknesses={evaluation.weaknesses}, "
                 f"q='{evaluation.question[:30]}...'"
             )
+
+    def _save_dpo_pair(self, question: str, winner: str, loser: str, score_delta: float):
+        """Сохраняет DPO preference pair в БД"""
+        self._conn.execute("""
+            INSERT INTO dpo_pairs (question, winner, loser, score_delta, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (question, winner[:2000], loser[:2000], score_delta, time.time()))
+        self._conn.commit()
+        logger.debug(f"🎯 DPO pair saved: delta={score_delta:.1f}")
+
+    def get_dpo_pairs(self, limit: int = 50, unapplied_only: bool = True) -> List[Dict]:
+        """
+        Возвращает DPO preference pairs для обучения.
+
+        Returns:
+            List[Dict] с полями: question, winner, loser, score_delta
+        """
+        query = "SELECT * FROM dpo_pairs"
+        if unapplied_only:
+            query += " WHERE applied = 0"
+        query += " ORDER BY score_delta DESC LIMIT ?"
+
+        rows = self._conn.execute(query, (limit,)).fetchall()
+        return [dict(row) for row in rows]
+
+    def mark_dpo_applied(self, pair_ids: List[int]):
+        """Помечает DPO pairs как применённые"""
+        if not pair_ids:
+            return
+        placeholders = ",".join("?" * len(pair_ids))
+        self._conn.execute(
+            f"UPDATE dpo_pairs SET applied = 1 WHERE id IN ({placeholders})",
+            pair_ids
+        )
+        self._conn.commit()
 
     # ═══════════════════════════════════════════════════════════════
     #           ПАРСИНГ ОТВЕТОВ LLM
@@ -764,6 +839,14 @@ class SelfPlay:
             elif second_half < first_half - 0.3:
                 trend = "declining"
 
+        # v7.4: DPO stats
+        dpo_total = self._conn.execute(
+            "SELECT COUNT(*) as c FROM dpo_pairs"
+        ).fetchone()["c"]
+        dpo_unapplied = self._conn.execute(
+            "SELECT COUNT(*) as c FROM dpo_pairs WHERE applied = 0"
+        ).fetchone()["c"]
+
         return {
             "total_evaluations": self._total_evals,
             "avg_score": round(self._avg_score, 1),
@@ -776,6 +859,8 @@ class SelfPlay:
             "tier_stats": tier_stats,
             "trend": trend,
             "batch_buffer_size": len(self._batch_buffer),
+            "dpo_pairs_total": dpo_total,
+            "dpo_pairs_pending": dpo_unapplied,
             "last_exam": {
                 "avg_score": last_exam["avg_score"],
                 "pass_rate": last_exam["pass_rate"],

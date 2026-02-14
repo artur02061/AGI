@@ -1,5 +1,5 @@
 """
-Кристина 7.2 — MicroTransformer (Механизм внимания)
+Кристина 7.4 — MicroTransformer (Механизм внимания)
 
 ЭТО КВАНТОВЫЙ СКАЧОК.
 
@@ -10,7 +10,7 @@
   "Банк стоит на берегу реки" → банк = здание (attention на "берегу", "реки")
   "Банк выдал кредит"         → банк = финансы (attention на "кредит")
 
-АРХИТЕКТУРА (Decoder-only, как GPT):
+АРХИТЕКТУРА (Decoder-only, LLaMA-стиль):
   ┌─────────────────────────────────────┐
   │ Input: BPE token IDs               │
   │ [23, 45, 67, 89, ...]              │
@@ -22,21 +22,21 @@
   └──────────────┬──────────────────────┘
                  ↓
   ┌─────────────────────────────────────┐  ×N layers
-  │ LayerNorm                           │
+  │ RMSNorm                             │
   │         ↓                           │
   │ Multi-Head Self-Attention           │
   │   Q = X @ Wq, K = X @ Wk, V = X @ Wv│
   │   Attn = softmax(Q @ K.T / √d) @ V │
   │         ↓                           │
-  │ Residual + LayerNorm                │
+  │ Residual + RMSNorm                  │
   │         ↓                           │
-  │ Feed-Forward (Linear → GELU → Linear)│
+  │ SwiGLU FFN (SiLU(xW_gate)⊙xW_up)W_d│
   │         ↓                           │
   │ Residual                            │
   └──────────────┬──────────────────────┘
                  ↓
   ┌─────────────────────────────────────┐
-  │ LayerNorm → Linear → softmax        │
+  │ RMSNorm → Linear → softmax          │
   │ → P(next_token | all_previous)      │
   └─────────────────────────────────────┘
 
@@ -179,13 +179,30 @@ def _gelu(x: float) -> float:
     return 0.5 * x * (1.0 + math.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * x * x * x)))
 
 
+def _silu(x: float) -> float:
+    """SiLU (Swish) активация: x * sigmoid(x) — используется в SwiGLU"""
+    sig = 1.0 / (1.0 + math.exp(-max(-80, min(80, x))))
+    return x * sig
+
+
 def _layer_norm(x: List[float], gamma: List[float], beta: List[float], eps: float = 1e-5) -> List[float]:
-    """Layer Normalization"""
+    """Layer Normalization (legacy, для обратной совместимости)"""
     n = len(x)
     mean = sum(x) / n
     var = sum((xi - mean) ** 2 for xi in x) / n
     inv_std = 1.0 / math.sqrt(var + eps)
     return [(xi - mean) * inv_std * g + b for xi, g, b in zip(x, gamma, beta)]
+
+
+def _rms_norm(x: List[float], gamma: List[float], eps: float = 1e-6) -> List[float]:
+    """
+    RMSNorm (Zhang & Sennrich, 2019) — используется в LLaMA, Mistral.
+    Проще LayerNorm: без вычитания mean и без beta.
+    Стабильнее и быстрее при обучении.
+    """
+    n = len(x)
+    rms = math.sqrt(sum(xi * xi for xi in x) / n + eps)
+    return [xi / rms * g for xi, g in zip(x, gamma)]
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -395,60 +412,74 @@ class MultiHeadAttention:
 
 class FeedForward:
     """
-    Position-wise Feed-Forward Network.
-    FFN(x) = GELU(x @ W1 + b1) @ W2 + b2
+    SwiGLU Feed-Forward Network (Shazeer, 2020).
+    Используется в LLaMA, Mistral, PaLM.
+
+    FFN_SwiGLU(x) = (SiLU(x @ W_gate) ⊙ (x @ W_up)) @ W_down
+
+    Преимущество над GELU FFN:
+    - Gate-механизм контролирует поток информации
+    - Лучшая сходимость при обучении
+    - ~10% лучше perplexity при том же числе параметров
     """
 
     def __init__(self, d_model: int, d_ff: int):
         self.d_model = d_model
         self.d_ff = d_ff
-        self.W1 = _random_matrix(d_model, d_ff)
-        self.b1 = _zeros_vec(d_ff)
-        self.W2 = _random_matrix(d_ff, d_model)
-        self.b2 = _zeros_vec(d_model)
+        # SwiGLU использует 3 матрицы вместо 2
+        self.W1 = _random_matrix(d_model, d_ff)       # W_gate
+        self.b1 = _zeros_vec(d_ff)                     # b_gate (legacy compat)
+        self.W_up = _random_matrix(d_model, d_ff)      # W_up (новая)
+        self.W2 = _random_matrix(d_ff, d_model)        # W_down
+        self.b2 = _zeros_vec(d_model)                  # b_down
 
     def forward(self, x: List[float]) -> List[float]:
-        """[d_model] → [d_model]"""
-        # x @ W1 + b1
-        hidden = _vec_add(_matvec(self.W1, x), self.b1)
-        # GELU activation
-        hidden = [_gelu(h) for h in hidden]
-        # hidden @ W2 + b2
+        """[d_model] → [d_model] через SwiGLU"""
+        # Gate path: SiLU(x @ W_gate + b_gate)
+        gate = _vec_add(_matvec(self.W1, x), self.b1)
+        gate = [_silu(g) for g in gate]
+        # Up path: x @ W_up
+        up = _matvec(self.W_up, x)
+        # Gated: SiLU(gate) ⊙ up
+        hidden = _vec_mul(gate, up)
+        # Down: hidden @ W_down + b_down
         output = _vec_add(_matvec(self.W2, hidden), self.b2)
         return output
 
     def get_params(self) -> List:
-        return [self.W1, self.b1, self.W2, self.b2]
+        return [self.W1, self.b1, self.W_up, self.W2, self.b2]
 
 
 class TransformerBlock:
     """
-    Один блок трансформера (Pre-Norm архитектура):
-      x → LayerNorm → MultiHeadAttention → + residual
-        → LayerNorm → FeedForward → + residual
+    Один блок трансформера (Pre-RMSNorm + SwiGLU):
+      x → RMSNorm → MultiHeadAttention → + residual
+        → RMSNorm → SwiGLU FeedForward → + residual
+
+    v7.4: Замена LayerNorm → RMSNorm (LLaMA-стиль)
     """
 
     def __init__(self, d_model: int, n_heads: int, d_ff: int):
         self.attention = MultiHeadAttention(d_model, n_heads)
         self.ffn = FeedForward(d_model, d_ff)
 
-        # LayerNorm параметры
+        # RMSNorm параметры (только gamma, без beta)
         self.ln1_gamma = [1.0] * d_model
-        self.ln1_beta = [0.0] * d_model
+        self.ln1_beta = [0.0] * d_model   # legacy: сохраняется для обратной совместимости
         self.ln2_gamma = [1.0] * d_model
-        self.ln2_beta = [0.0] * d_model
+        self.ln2_beta = [0.0] * d_model   # legacy
 
     def forward(self, x: List[List[float]], causal_mask: bool = True) -> List[List[float]]:
         """[seq_len × d_model] → [seq_len × d_model]"""
         seq_len = len(x)
 
-        # 1. Pre-norm → Attention → Residual
-        normed = [_layer_norm(x[i], self.ln1_gamma, self.ln1_beta) for i in range(seq_len)]
+        # 1. Pre-RMSNorm → Attention → Residual
+        normed = [_rms_norm(x[i], self.ln1_gamma) for i in range(seq_len)]
         attn_out = self.attention.forward(normed, causal_mask)
         x = [_vec_add(x[i], attn_out[i]) for i in range(seq_len)]
 
-        # 2. Pre-norm → FFN → Residual
-        normed = [_layer_norm(x[i], self.ln2_gamma, self.ln2_beta) for i in range(seq_len)]
+        # 2. Pre-RMSNorm → SwiGLU FFN → Residual
+        normed = [_rms_norm(x[i], self.ln2_gamma) for i in range(seq_len)]
         ffn_out = [self.ffn.forward(normed[i]) for i in range(seq_len)]
         x = [_vec_add(x[i], ffn_out[i]) for i in range(seq_len)]
 
@@ -564,15 +595,15 @@ class MicroTransformer:
         for block in self.blocks:
             # Attention: 4 matrices [d×d] + 4 biases [d]
             count += 4 * self.d_model * self.d_model + 4 * self.d_model
-            # FFN: W1[d×d_ff] + b1[d_ff] + W2[d_ff×d] + b2[d]
-            count += self.d_model * self.d_ff + self.d_ff
-            count += self.d_ff * self.d_model + self.d_model
-            # LayerNorm: 2 × (gamma[d] + beta[d])
-            count += 4 * self.d_model
+            # SwiGLU FFN: W_gate[d×d_ff] + b_gate[d_ff] + W_up[d×d_ff] + W_down[d_ff×d] + b_down[d]
+            count += 2 * self.d_model * self.d_ff + self.d_ff  # W_gate + W_up + b_gate
+            count += self.d_ff * self.d_model + self.d_model    # W_down + b_down
+            # RMSNorm: 2 × gamma[d] (beta хранится для совместимости, но не используется)
+            count += 2 * self.d_model
         # Output bias
         count += self.vocab_size
-        # Final LN
-        count += 2 * self.d_model
+        # Final RMSNorm gamma
+        count += self.d_model
         return count
 
     # ═══════════════════════════════════════════════════════════════
@@ -603,8 +634,8 @@ class MicroTransformer:
         for block in self.blocks:
             x = block.forward(x, causal_mask=True)
 
-        # 3. Final LayerNorm
-        x = [_layer_norm(xi, self.ln_final_gamma, self.ln_final_beta) for xi in x]
+        # 3. Final RMSNorm
+        x = [_rms_norm(xi, self.ln_final_gamma) for xi in x]
 
         # 4. Output: x @ embedding.weight.T + bias (tied embeddings)
         # logits[i] = x[i] @ E.T + bias
@@ -870,7 +901,7 @@ class MicroTransformer:
         for block in self.blocks:
             x = block.forward(x, causal_mask=True)
 
-        x = [_layer_norm(xi, self.ln_final_gamma, self.ln_final_beta) for xi in x]
+        x = [_rms_norm(xi, self.ln_final_gamma) for xi in x]
 
         # Берём последний токен (как в GPT) или среднее всех
         # Используем среднее — работает лучше для классификации
@@ -909,6 +940,7 @@ class MicroTransformer:
             state[f"{prefix}_attn_bo"] = block.attention.bo
             state[f"{prefix}_ffn_W1"] = block.ffn.W1
             state[f"{prefix}_ffn_b1"] = block.ffn.b1
+            state[f"{prefix}_ffn_W_up"] = block.ffn.W_up  # SwiGLU gate
             state[f"{prefix}_ffn_W2"] = block.ffn.W2
             state[f"{prefix}_ffn_b2"] = block.ffn.b2
             state[f"{prefix}_ln1_gamma"] = block.ln1_gamma
@@ -980,7 +1012,7 @@ class MicroTransformer:
                 data = _load(f"{prefix}_attn_{attr_name}")
                 if data:
                     setattr(block.attention, attr_name, data)
-            for key in ["W1", "b1", "W2", "b2"]:
+            for key in ["W1", "b1", "W_up", "W2", "b2"]:
                 data = _load(f"{prefix}_ffn_{key}")
                 if data:
                     setattr(block.ffn, key, data)

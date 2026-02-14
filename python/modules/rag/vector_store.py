@@ -10,6 +10,7 @@
 """
 
 import hashlib
+import math
 import re
 from collections import Counter
 from datetime import datetime, timedelta
@@ -107,6 +108,9 @@ class VectorMemory:
                 logger.info("✅ Коллекция kristina_memory готова")
             except Exception as e:
                 logger.error(f"❌ Ошибка создания коллекции: {e}")
+
+        # Один async-клиент для всех embedding-запросов (предотвращает утечку транспортов)
+        self._async_client: Optional[ollama.AsyncClient] = None
 
         # Embedding кэш — используем общий если передан, иначе свой
         self._shared_cache = shared_embedding_cache
@@ -228,10 +232,8 @@ class VectorMemory:
                     "distance": results["distances"][0][i] if "distances" in results else None,
                 })
 
-        formatted.sort(key=lambda x: (
-            x["distance"] if x["distance"] is not None else 1.0,
-            -x["metadata"].get("importance", 1),
-        ))
+        # v7.4: Reranking с temporal decay + keyword overlap + importance
+        formatted = self._rerank(formatted, query)
 
         return formatted[:n_results]
 
@@ -282,10 +284,8 @@ class VectorMemory:
                     "distance": results["distances"][0][i] if "distances" in results else None,
                 })
 
-        formatted.sort(key=lambda x: (
-            x["distance"] if x["distance"] is not None else 1.0,
-            -x["metadata"].get("importance", 1),
-        ))
+        # v7.4: Reranking с temporal decay + keyword overlap + importance
+        formatted = self._rerank(formatted, query)
 
         return formatted[:n_results]
 
@@ -396,6 +396,81 @@ class VectorMemory:
         items.sort(key=lambda x: x["metadata"].get("timestamp", ""), reverse=True)
         return items[:n]
 
+    # ── Reranking (v7.4) ──
+
+    def _rerank(self, results: List[Dict], query: str) -> List[Dict]:
+        """
+        v7.4: Трёхфакторное переранжирование результатов RAG.
+
+        Финальный score = w1*semantic + w2*temporal + w3*keyword + w4*importance
+
+        1. Semantic score — cosine distance из ChromaDB (инвертированная)
+        2. Temporal decay — свежие воспоминания получают бонус (полураспад 7 дней)
+        3. Keyword overlap — совпадение ключевых слов запроса и документа
+        4. Importance — важность из метаданных
+        """
+        if not results:
+            return results
+
+        query_keywords = set(self._extract_keywords(query))
+        now = datetime.now()
+
+        for item in results:
+            meta = item["metadata"]
+            distance = item.get("distance")
+
+            # 1. Semantic: distance → similarity (cosine distance: 0=идентичны, 2=противоположны)
+            semantic = 1.0 - (distance / 2.0) if distance is not None else 0.5
+
+            # 2. Temporal decay: exp(-lambda * age_days), half-life = 7 дней
+            temporal = 0.5
+            ts = meta.get("timestamp", "")
+            if ts:
+                try:
+                    doc_time = datetime.fromisoformat(ts)
+                    age_days = max((now - doc_time).total_seconds() / 86400, 0)
+                    half_life = 7.0
+                    temporal = math.exp(-0.693 * age_days / half_life)  # ln(2) ≈ 0.693
+                except (ValueError, TypeError):
+                    pass
+
+            # 3. Keyword overlap: Jaccard-like
+            doc_keywords = set()
+            kw_raw = meta.get("keywords", "")
+            if isinstance(kw_raw, str):
+                try:
+                    import json as _json
+                    doc_keywords = set(_json.loads(kw_raw))
+                except (ValueError, TypeError):
+                    doc_keywords = set(kw_raw.split())
+            elif isinstance(kw_raw, list):
+                doc_keywords = set(kw_raw)
+
+            if query_keywords and doc_keywords:
+                overlap = len(query_keywords & doc_keywords)
+                union = len(query_keywords | doc_keywords)
+                keyword_score = overlap / union if union > 0 else 0.0
+            else:
+                keyword_score = 0.0
+
+            # 4. Importance
+            importance = meta.get("importance", 1)
+            importance_score = min(importance / 3.0, 1.0)
+
+            # Взвешенная сумма
+            final_score = (
+                0.50 * semantic +
+                0.20 * temporal +
+                0.15 * keyword_score +
+                0.15 * importance_score
+            )
+
+            item["_rerank_score"] = final_score
+
+        # Сортируем по финальному score (убывание)
+        results.sort(key=lambda x: x.get("_rerank_score", 0), reverse=True)
+        return results
+
     # ── Embeddings ──
 
     def _get_embedding(self, text: str) -> List[float]:
@@ -442,8 +517,16 @@ class VectorMemory:
             logger.error(f"❌ Ошибка embedding: {e}")
             return [0.0] * config.EMBEDDING_DIM
 
+    def _get_async_client(self) -> ollama.AsyncClient:
+        """Возвращает переиспользуемый AsyncClient (предотвращает утечку транспортов)"""
+        if self._async_client is None:
+            self._async_client = ollama.AsyncClient()
+        return self._async_client
+
     async def _get_embedding_async(self, text: str) -> List[float]:
         """Async embedding через ollama.AsyncClient — не блокирует event loop"""
+        client = self._get_async_client()
+
         # Shared cache (Rust EmbeddingCacheAdapter)
         if self._shared_cache is not None:
             cached = self._shared_cache.get(text)
@@ -451,8 +534,7 @@ class VectorMemory:
                 return cached
 
             try:
-                _async_client = ollama.AsyncClient()
-                response = await _async_client.embeddings(
+                response = await client.embeddings(
                     model=config.EMBEDDING_MODEL,
                     prompt=text,
                 )
@@ -470,8 +552,7 @@ class VectorMemory:
             return self.embedding_cache[text_hash]
 
         try:
-            _async_client = ollama.AsyncClient()
-            response = await _async_client.embeddings(
+            response = await client.embeddings(
                 model=config.EMBEDDING_MODEL,
                 prompt=text,
             )
@@ -547,6 +628,16 @@ class VectorMemory:
             "cache_size": len(self.embedding_cache),
             "persistent": self.client is not None,
         }
+
+    async def close(self):
+        """Закрывает async-клиент Ollama (предотвращает ResourceWarning)"""
+        if self._async_client is not None:
+            try:
+                if hasattr(self._async_client, '_client') and self._async_client._client:
+                    await self._async_client._client.aclose()
+            except Exception:
+                pass
+            self._async_client = None
 
     def save_cache(self):
         """Явное сохранение кэша (вызывается при shutdown)"""
