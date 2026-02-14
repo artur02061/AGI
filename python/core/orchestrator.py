@@ -34,6 +34,7 @@ from core.micro_transformer import MicroTransformer
 from core.chain_of_thought import ChainOfThought
 from core.self_play import SelfPlay
 from core.cross_attention import MemoryAugmentedContext
+from core.dialogue_memory import DialogueMemory
 from core.task_planner import TaskPlanner
 from core.conditional_gen import ConditionalGeneration
 from core.mixture_of_experts import MixtureOfExperts
@@ -140,6 +141,12 @@ class Orchestrator:
             sentence_embeddings=self.sentence_embeddings,
         )
 
+        # ── v7.5: DialogueMemory (безлимитная память диалога) ──
+        self.dialogue_memory = DialogueMemory(
+            sentence_encoder=self.sentence_embeddings.encode,
+            llm_summarizer=self._llm_summarize,
+        )
+
         # ── v7.3: Task Planner (декомпозиция задач) ──
         self.task_planner = TaskPlanner(
             knowledge_distillation=self.knowledge_distillation,
@@ -225,6 +232,11 @@ class Orchestrator:
             f"🎮 SelfPlay: {sp_stats['total_evaluations']} оценок, "
             f"avg={sp_stats['avg_score']}/10, "
             f"reinforce={sp_stats['reinforce_rate']}%"
+        )
+        dm_stats = self.dialogue_memory.get_stats()
+        logger.info(
+            f"💬 DialogueMemory: window={config.config.sliding_summary_window}, "
+            f"max_summary={config.config.sliding_summary_max_tokens}tok"
         )
         ca_stats = self.memory_attention.get_stats()
         logger.info(
@@ -719,41 +731,56 @@ class Orchestrator:
             "context": context,
         }
 
-    async def _build_context(self, user_input: str) -> str:
-        """Строит контекст из всех источников памяти."""
+    async def _llm_summarize(self, prompt: str) -> str:
+        """Суммаризация через LLM (для DialogueMemory)"""
+        try:
+            from ollama import AsyncClient
+            client = AsyncClient(host=config.config.ollama_hosts.cpu)
+            response = await client.generate(
+                model=config.config.memory_summarizer_model,
+                prompt=prompt,
+                options={"temperature": 0.1, "num_predict": 300},
+            )
+            return response.get("response", "")
+        except Exception as e:
+            logger.debug(f"LLM summarize failed: {e}")
+            return ""
 
-        # 1. Релевантная память
+    async def _build_context(self, user_input: str) -> str:
+        """
+        Строит контекст из всех источников памяти.
+
+        v7.5: Использует DialogueMemory для безлимитного контекста сессии.
+
+        Бюджет ~2000 токенов:
+          - DialogueMemory (резюме + поиск + recent): ~1800 токенов
+          - Долгосрочная память (ChromaDB): ~300 токенов
+          - Code / MoE: ~200 токенов
+        """
+
+        # 1. DialogueMemory: резюме сессии + поиск + последние сообщения
+        dialogue_context = await self.dialogue_memory.build_context(user_input)
+
+        # 2. Релевантная эпизодическая память (short-term)
         relevant_memory = self.memory.get_relevant_context(user_input, max_items=3)
 
-        # 2. Thread контекст (последние 3 сообщения)
-        thread_context = ""
-        if self.thread_memory.current_thread:
-            thread = self.thread_memory.current_thread
-            messages = thread.get('messages', [])[-3:]
-
-            if messages:
-                thread_context = f"\nТекущая тема: {thread['topic']}\n"
-                thread_context += "Последние сообщения:\n"
-
-                for msg in messages:
-                    thread_context += f"  Пользователь: {msg['user'][:80]}\n"
-                    thread_context += f"  Кристина: {msg['assistant'][:80]}\n"
-
-        # 3. Векторная память (async)
-        vector_results = await self.vector_memory.search_async(user_input, n_results=2)
+        # 3. Векторная долгосрочная память (async)
         vector_context = ""
-
-        if vector_results:
-            vector_context = "\nИз долговременной памяти:\n"
-            for r in vector_results[:2]:
-                date = r['metadata'].get('date', '')
-                text = r['text'][:100]
-                vector_context += f"  [{date}] {text}...\n"
+        try:
+            vector_results = await self.vector_memory.search_async(user_input, n_results=3)
+            if vector_results:
+                vector_parts = []
+                for r in vector_results[:3]:
+                    date = r['metadata'].get('date', '')
+                    text = r['text'][:120]
+                    vector_parts.append(f"  [{date}] {text}")
+                vector_context = "\n[Долговременная память]:\n" + "\n".join(vector_parts)
+        except Exception:
+            pass
 
         # 4. Code Understanding: если пользователь прислал код
         code_context = ""
         try:
-            # Ищем блок кода в сообщении (```...``` или отступ)
             import re as _re
             code_match = _re.search(r'```(?:python)?\s*\n(.+?)```', user_input, _re.DOTALL)
             if code_match:
@@ -780,8 +807,8 @@ class Orchestrator:
             pass
 
         context = f"""Контекст:
+{dialogue_context}
 {relevant_memory}
-{thread_context}
 {vector_context}
 {code_context}
 {moe_context}"""
@@ -792,6 +819,11 @@ class Orchestrator:
         """Сохраняет диалог в память + обучает v7.2 компоненты"""
 
         try:
+            # v7.5: Сохраняем в DialogueMemory (безлимитная память сессии)
+            self.dialogue_memory.add('user', user_input)
+            self.dialogue_memory.add('assistant', response)
+            await self.dialogue_memory.maybe_compress()
+
             self.memory.add_to_working("user", user_input)
             self.memory.add_to_working("assistant", response)
 
@@ -983,6 +1015,7 @@ class Orchestrator:
                 "chain_of_thought": self.chain_of_thought.get_stats(),
                 "self_play": self.self_play.get_stats(),
                 "cross_attention": self.memory_attention.get_stats(),
+                "dialogue_memory": self.dialogue_memory.get_stats(),
                 "task_planner": self.task_planner.get_stats(),
                 "conditional_gen": self.conditional_gen.get_stats(),
                 "mixture_of_experts": self.moe.get_stats(),

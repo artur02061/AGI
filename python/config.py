@@ -78,6 +78,13 @@ class KristinaConfig(BaseSettings):
     vector_min_age_minutes: int = 30
     thread_timeout_seconds: int = 600
 
+    # v7.5: Безлимитная память диалога
+    sliding_summary_window: int = 6         # Сообщений до сжатия
+    sliding_summary_max_tokens: int = 500   # Макс размер резюме
+    session_search_top_k: int = 3           # Результатов из архива сессии
+    session_search_threshold: float = 0.3   # Мин. косинусное сходство
+    transformer_max_seq_len: int = 512      # Контекст MicroTransformer (было 256)
+
     # v6.0: Иерархическая суммаризация
     memory_summarize_enabled: bool = True
     # После скольки raw-эпизодов запускать daily summary
