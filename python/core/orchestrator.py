@@ -389,6 +389,10 @@ class Orchestrator:
                 self.stats["tier3_hits"] += 1
 
                 plan = await self.director.analyze_request(user_input, context)
+
+                # Валидация: LLM иногда роутит диалог в executor/tool — исправляем
+                plan = self._validate_llm_plan(plan, user_input)
+
                 logger.info(f"📋 План: {plan['primary_agent']} + {plan['supporting_agents']}")
 
                 # ОБУЧЕНИЕ: записываем LLM-решение в LearnedPatterns
@@ -546,6 +550,73 @@ class Orchestrator:
         )
 
         return final_response
+
+    @staticmethod
+    def _is_conversational(text: str) -> bool:
+        """Проверяет, является ли запрос диалоговым/философским (не инструментальным)"""
+        import re as _re
+        patterns = [
+            r'ты\s+(?:себя\s+)?осознаёшь',
+            r'ты\s+(?:себя\s+)?осознаешь',
+            r'ты\s+(?:живая|живой|настоящ|реальн)',
+            r'ты\s+(?:робот|бот|ии|искусственн|программ|нейросет)',
+            r'кто\s+ты', r'что\s+ты\s+(?:такое|есть)',
+            r'ты\s+(?:чувствуешь|думаешь|мыслишь|понимаешь)',
+            r'у\s+тебя\s+(?:есть\s+)?(?:сознани|чувств|эмоци|душ)',
+            r'что\s+(?:ты\s+)?(?:умеешь|можешь)',
+            r'^как\s+(?:ты|у\s+тебя|твои\s+дела|поживаешь)',
+            r'(?:что|как)\s+(?:нового|новенького)',
+            r'расскажи\s+о\s+себе',
+            r'ты\s+(?:человек|личност)',
+            r'(?:что|как)\s+ты\s+(?:о\s+себе|думаешь\s+о)',
+            r'(?:нрав|люб|ненавид|боишь)\w*\s+(?:ты|тебе)',
+            r'(?:твоё|твое|твой|твоя)\s+(?:мнение|отношение|мечта|цель|имя)',
+            r'(?:о\s+чём|о\s+чем)\s+ты\s+(?:думаешь|мечтаешь)',
+            r'(?:смысл\s+жизни|суть\s+бытия)',
+        ]
+        text_lower = text.lower().strip()
+        for p in patterns:
+            if _re.search(p, text_lower):
+                return True
+        # Короткие вопросы без глаголов действия — скорее всего диалог
+        if len(text_lower.split()) <= 5 and text_lower.endswith('?'):
+            action_words = [
+                'создай', 'удали', 'запусти', 'открой', 'найди',
+                'скачай', 'покажи', 'закрой', 'выполни', 'прочитай',
+            ]
+            if not any(w in text_lower for w in action_words):
+                return True
+        return False
+
+    def _validate_llm_plan(self, plan: dict, user_input: str) -> dict:
+        """
+        Валидация плана от LLM: предотвращает роутинг диалоговых запросов в executor/tool.
+        """
+        intent = plan.get("intent", "unknown")
+        agent = plan.get("primary_agent", "director")
+
+        # Если LLM направил в executor для диалогового запроса — переопределяем
+        if agent == "executor" and self._is_conversational(user_input):
+            logger.warning(
+                f"⚠️ LLM роутинг исправлен: '{user_input[:40]}' "
+                f"({intent}→executor) → director"
+            )
+            plan["primary_agent"] = "director"
+            plan["intent"] = "dialogue"
+            plan["supporting_agents"] = []
+            plan["complexity"] = "simple"
+
+        # Если intent — инструмент, но запрос явно не инструментальный
+        tool_intents = set(self.tools.keys())
+        if intent in tool_intents and self._is_conversational(user_input):
+            logger.warning(
+                f"⚠️ LLM intent исправлен: '{intent}' → 'dialogue'"
+            )
+            plan["intent"] = "dialogue"
+            plan["primary_agent"] = "director"
+            plan["supporting_agents"] = []
+
+        return plan
 
     async def _executor_path(
         self,
