@@ -10,6 +10,7 @@
 """
 
 import hashlib
+import json
 import math
 import re
 from collections import Counter
@@ -106,8 +107,17 @@ class VectorMemory:
                     metadata={"hnsw:space": "cosine"},
                 )
                 logger.info("✅ Коллекция kristina_memory готова")
-            except Exception as e:
-                logger.error(f"❌ Ошибка создания коллекции: {e}")
+            except (KeyError, Exception) as e:
+                logger.warning(f"⚠️ Ошибка коллекции ({e}), пересоздаю...")
+                try:
+                    self.client.delete_collection("kristina_memory")
+                    self.collection = self.client.get_or_create_collection(
+                        name="kristina_memory",
+                        metadata={"hnsw:space": "cosine"},
+                    )
+                    logger.info("✅ Коллекция kristina_memory пересоздана")
+                except Exception as e2:
+                    logger.error(f"❌ Не удалось пересоздать коллекцию: {e2}")
 
         # Один async-клиент для всех embedding-запросов (предотвращает утечку транспортов)
         self._async_client: Optional[ollama.AsyncClient] = None
@@ -325,8 +335,7 @@ class VectorMemory:
 
         # keywords needs to be a string for ChromaDB
         if isinstance(meta["keywords"], list):
-            import json as _json
-            meta["keywords"] = _json.dumps(meta["keywords"], ensure_ascii=False)
+            meta["keywords"] = json.dumps(meta["keywords"], ensure_ascii=False)
 
         embedding = await self._get_embedding_async(text)
 
@@ -439,8 +448,7 @@ class VectorMemory:
             kw_raw = meta.get("keywords", "")
             if isinstance(kw_raw, str):
                 try:
-                    import json as _json
-                    doc_keywords = set(_json.loads(kw_raw))
+                    doc_keywords = set(json.loads(kw_raw))
                 except (ValueError, TypeError):
                     doc_keywords = set(kw_raw.split())
             elif isinstance(kw_raw, list):
