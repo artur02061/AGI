@@ -713,34 +713,11 @@ class DialogueEngine:
 
                 # Обновляем FTS
                 self._conn.execute("""
-                    INSERT INTO routing_fts (rowid, keywords)
+                    INSERT INTO dialogue_fts (rowid, keywords)
                     VALUES (?, ?)
                 """, (cur.lastrowid, keywords))
-            except Exception:
-                # FTS table might be named differently, use dialogue_fts
-                try:
-                    rowid = self._conn.execute("""
-                        INSERT INTO dialogue_patterns
-                        (situations, keywords, response_text, components, mood,
-                         source, created_at, last_used)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        json.dumps(situations),
-                        keywords,
-                        response,
-                        json.dumps(components),
-                        mood,
-                        source,
-                        now,
-                        now,
-                    )).lastrowid
-
-                    self._conn.execute("""
-                        INSERT INTO dialogue_fts (rowid, keywords)
-                        VALUES (?, ?)
-                    """, (rowid, keywords))
-                except Exception as e:
-                    logger.debug(f"Duplicate or error: {e}")
+            except Exception as e:
+                logger.debug(f"Dialogue pattern save error: {e}")
 
         # 2. Разбираем ответ на фразы и добавляем в PhraseBank
         self._learn_phrases_from_response(response, situations, mood, source)

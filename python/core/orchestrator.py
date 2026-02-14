@@ -125,7 +125,7 @@ class Orchestrator:
         self.self_play = SelfPlay(
             director=self.director,
             learned_patterns=self.learned_patterns,
-            neural_engine=self.dialogue_engine._neural if hasattr(self.dialogue_engine, '_neural') else None,
+            neural_engine=self.dialogue_engine.neural if hasattr(self.dialogue_engine, 'neural') else None,
             knowledge_distillation=self.knowledge_distillation,
             chain_of_thought=self.chain_of_thought,
         )
