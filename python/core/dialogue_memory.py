@@ -352,8 +352,8 @@ class SessionIndex:
         if self._encoder:
             try:
                 embedding = self._encoder(text)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Embedding encode failed: {e}")
 
         facts = _extract_facts(text)
 
@@ -382,7 +382,8 @@ class SessionIndex:
 
         try:
             query_embedding = self._encoder(query)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Query embedding failed: {e}")
             return []
 
         if not query_embedding:

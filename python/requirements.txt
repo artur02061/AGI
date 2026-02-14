@@ -1,19 +1,18 @@
 # Кристина 6.0 — Зависимости (обновлено 2026)
 
 # ── Ядро ──
-ollama>=0.5.0               # Ollama Python client (tool calling + format="json")
-pydantic>=2.10.0            # Типизированная конфигурация
-pydantic-settings>=2.4.0    # .env + env vars
-
+ollama>=0.5.0,<1.0          # Ollama Python client (tool calling + format="json")
+pydantic>=2.10.0,<3.0       # Типизированная конфигурация
+pydantic-settings>=2.4.0,<3.0  # .env + env vars
 
 # ── Производительность ──
 orjson>=3.10.0              # Быстрая JSON сериализация (5×)
 aiofiles>=24.1.0            # Async файловые операции
-numpy>=2.0.0                # NumPy 2 — для векторных операций
-httpx[http2]>=0.28.0        # Async HTTP клиент (замена requests)
+numpy>=2.0.0,<3.0           # NumPy 2 — для векторных операций
+httpx[http2]>=0.28.0        # Async HTTP клиент
 
 # ── Память и поиск ──
-chromadb>=0.5.0             # Векторная БД (PersistentClient)
+chromadb>=0.5.0,<1.0        # Векторная БД (PersistentClient)
 networkx>=3.3               # Knowledge Graph
 
 # ── Системные ──
@@ -21,9 +20,9 @@ psutil>=6.0.0               # Мониторинг системы
 watchdog>=4.0.0             # Наблюдение за файлами
 schedule>=1.2.0             # Планировщик
 
-# ── HTTP ──
-requests>=2.32.0            # HTTP клиент (legacy, для bs4)
+# ── HTTP / парсинг ──
 beautifulsoup4>=4.12.0      # HTML парсинг
+requests>=2.32.0            # HTTP клиент (для bs4)
 
 # ── Поиск ──
 duckduckgo-search>=6.0.0    # DuckDuckGo API
@@ -36,7 +35,7 @@ python-dotenv>=1.0.0        # .env файлы
 pyyaml>=6.0                 # YAML конфигурация личности
 
 # ── Rust ядро (сборка) ──
-maturin>=1.7.0              # Сборка Rust → Python wheel
+maturin>=1.7.0,<2.0         # Сборка Rust → Python wheel
 
 # ══════════════════════════════════════════
 # Опциональные

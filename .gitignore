@@ -6,3 +6,39 @@ rust_core/target/
 dist/
 build/
 .env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor swap files
+*.swp
+*.swo
+*~
+
+# Python
+venv/
+env/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data / Logs
+*.log
+*.sqlite
+*.sqlite3
+
+# Rust
+*.so
+*.dylib
+*.dll

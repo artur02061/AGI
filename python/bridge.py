@@ -172,15 +172,15 @@ class MemoryAdapter:
                 kg = self.knowledge_graph.get_context_for_query(query, max_facts=3)
                 if kg:
                     parts.append(kg)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"KG context query failed: {e}")
 
         if len(parts) < max_items and self.summarizer:
             try:
                 for r in self.summarizer.search_summaries(query, max_results=2):
                     parts.append(f"[{r['level']} {r['key']}] {r['summary'][:150]}")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Summarizer search failed: {e}")
 
         return "\n".join(parts) if parts else "Нет релевантного контекста."
 
@@ -200,13 +200,13 @@ class MemoryAdapter:
         if self.summarizer:
             try:
                 stats["summaries"] = self.summarizer.get_stats()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Summarizer stats failed: {e}")
         if self.knowledge_graph:
             try:
                 stats["knowledge_graph"] = self.knowledge_graph.get_stats()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"KG stats failed: {e}")
         return stats
 
     def save(self):
@@ -214,8 +214,8 @@ class MemoryAdapter:
         if self.knowledge_graph:
             try:
                 self.knowledge_graph.save()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"KG save failed: {e}")
 
     def load(self):
         """Загружает память с диска (делегирует в engine)"""
@@ -237,8 +237,8 @@ class MemoryAdapter:
             try:
                 from modules.memory.summarizer import MemorySummarizer
                 self._summarizer = MemorySummarizer()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"MemorySummarizer init failed: {e}")
         return self._summarizer
 
     @property
@@ -249,8 +249,8 @@ class MemoryAdapter:
                 if cfg.config.knowledge_graph_enabled:
                     from modules.memory.knowledge_graph import KnowledgeGraph
                     self._knowledge_graph = KnowledgeGraph()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"KnowledgeGraph init failed: {e}")
         return self._knowledge_graph
 
 
