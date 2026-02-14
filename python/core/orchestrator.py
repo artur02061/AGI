@@ -546,9 +546,10 @@ class Orchestrator:
         intent = plan.get("intent")
 
         # Строим задачу для executor
+        # Извлекаем args из route (Tier 1/2) или пустой dict для fallback на _detect_tool_from_input
         task = {
             "tool": intent,
-            "args": route.get("slots", {}) if route else [],
+            "args": route.get("slots", {}) if route else {},
             "user_input": user_input,
         }
 
