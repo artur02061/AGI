@@ -36,6 +36,7 @@ from core.self_play import SelfPlay
 from core.cross_attention import MemoryAugmentedContext
 from core.task_planner import TaskPlanner
 from core.conditional_gen import ConditionalGeneration
+from core.mixture_of_experts import MixtureOfExperts
 
 from utils.logging import get_logger
 import config
@@ -145,6 +146,9 @@ class Orchestrator:
             bpe_tokenizer=self.bpe_tokenizer,
         )
 
+        # ── v7.3: Mixture of Experts (специализированные эксперты) ──
+        self.moe = MixtureOfExperts()
+
         self.agents = {
             "director": self.director,
             "executor": self.executor,
@@ -224,6 +228,12 @@ class Orchestrator:
         logger.info(
             f"🎭 ConditionalGen: {cg_stats['total_generations']} генераций, "
             f"{cg_stats['condition_values']} условий"
+        )
+        moe_stats = self.moe.get_stats()
+        logger.info(
+            f"🧠 MoE: {moe_stats['num_experts']} experts, "
+            f"{moe_stats['total_forwards']} forwards, "
+            f"balance={moe_stats['balance_loss']:.4f}"
         )
         logger.info(f"📊 VRAM: {self.vram_manager.get_stats()['vram']}")
 
@@ -714,10 +724,23 @@ class Orchestrator:
                 text = r['text'][:100]
                 vector_context += f"  [{date}] {text}...\n"
 
+        # 4. MoE routing: определяем доминирующего эксперта
+        moe_context = ""
+        try:
+            input_emb = self.sentence_embeddings.encode(user_input)
+            if input_emb:
+                from core.mixture_of_experts import D_MODEL as MOE_D
+                in_vec = (input_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
+                expert_name = self.moe.get_expert_for_text(user_input, in_vec)
+                moe_context = f"\nДоминирующий эксперт: {expert_name}"
+        except Exception:
+            pass
+
         context = f"""Контекст:
 {relevant_memory}
 {thread_context}
-{vector_context}"""
+{vector_context}
+{moe_context}"""
 
         return context
 
@@ -771,6 +794,19 @@ class Orchestrator:
                 self.conditional_gen.train(response, conditions)
             except Exception as e:
                 logger.debug(f"ConditionalGen training error: {e}")
+
+            # MoE: обучаем экспертов на паре input→response embeddings
+            try:
+                input_emb = self.sentence_embeddings.encode(user_input)
+                resp_emb = self.sentence_embeddings.encode(response[:200])
+                if input_emb and resp_emb:
+                    # Нормализуем до d_model MoE
+                    from core.mixture_of_experts import D_MODEL as MOE_D
+                    in_vec = (input_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
+                    tgt_vec = (resp_emb[:MOE_D] + [0.0] * MOE_D)[:MOE_D]
+                    self.moe.train_step(in_vec, tgt_vec)
+            except Exception as e:
+                logger.debug(f"MoE training error: {e}")
 
             # KnowledgeDistillation: дистиллирует LLM-ответы
             intent = plan.get("intent", "unknown")
@@ -852,5 +888,6 @@ class Orchestrator:
                 "cross_attention": self.memory_attention.get_stats(),
                 "task_planner": self.task_planner.get_stats(),
                 "conditional_gen": self.conditional_gen.get_stats(),
+                "mixture_of_experts": self.moe.get_stats(),
             },
         }
