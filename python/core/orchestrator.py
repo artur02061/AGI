@@ -352,9 +352,13 @@ class Orchestrator:
                         final_response += f"\n\n{assessment['hedge_phrase']}"
             else:
                 # ── Tier 3: Chain-of-Thought (рассуждения без LLM) ──
-                cot_result = self.chain_of_thought.reason(
-                    user_input, context=context,
-                )
+                # CoT НЕ должен обрабатывать запросы, требующие реальных действий
+                # (создание/удаление файлов, запуск приложений, системные команды)
+                cot_result = None
+                if not self._requires_tool_execution(user_input):
+                    cot_result = self.chain_of_thought.reason(
+                        user_input, context=context,
+                    )
 
                 if cot_result and cot_result.overall_confidence >= 0.6:
                     # CoT справился — отвечаем без LLM!
@@ -550,6 +554,29 @@ class Orchestrator:
         )
 
         return final_response
+
+    @staticmethod
+    def _requires_tool_execution(text: str) -> bool:
+        """Проверяет, требует ли запрос реального выполнения инструмента (не рассуждений)"""
+        import re as _re
+        text_lower = text.lower()
+        # Действия, которые требуют реальных инструментов, а не рассуждений CoT
+        action_patterns = [
+            r'(?:создай|сделай|сгенерируй)\s+(?:(?:текстовый|новый)\s+)?(?:файл|документ|папку|директорию)',
+            r'(?:удали|убери|сотри)\s+(?:файл|документ|папку)',
+            r'(?:запусти|открой|включи)\s+(?:приложение\s+)?\w+',
+            r'(?:закрой|заверши|убей)\s+(?:процесс|приложение)',
+            r'(?:скопируй|перемести|переименуй)\s+(?:файл|документ|папку)',
+            r'(?:прочитай|прочти)\s+(?:файл|документ)',
+            r'(?:запиши|допиши|добавь)\s+(?:в\s+)?(?:файл|документ)',
+            r'(?:скачай|загрузи)\s+',
+            r'(?:выполни\s+команд|терминал)',
+            r'(?:найди|поиск)\s+файл',
+        ]
+        for p in action_patterns:
+            if _re.search(p, text_lower):
+                return True
+        return False
 
     @staticmethod
     def _is_conversational(text: str) -> bool:

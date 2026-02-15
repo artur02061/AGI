@@ -105,35 +105,23 @@ class VectorMemory:
             try:
                 self.collection = self.client.get_or_create_collection(
                     name="kristina_memory",
-                    metadata={"hnsw:space": "cosine"},
                 )
                 logger.info("✅ Коллекция kristina_memory готова")
             except (KeyError, Exception) as e:
                 logger.warning(f"⚠️ Ошибка коллекции ({e}), пересоздаю...")
                 try:
-                    self.client.delete_collection("kristina_memory")
-                    self.collection = self.client.get_or_create_collection(
-                        name="kristina_memory",
-                        metadata={"hnsw:space": "cosine"},
-                    )
-                    logger.info("✅ Коллекция kristina_memory пересоздана")
+                    import shutil
+                    self.client = None
+                    shutil.rmtree(persist_dir, ignore_errors=True)
+                    Path(persist_dir).mkdir(parents=True, exist_ok=True)
+                    self.client = _init_chromadb(persist_dir)
+                    if self.client:
+                        self.collection = self.client.get_or_create_collection(
+                            name="kristina_memory",
+                        )
+                        logger.info("✅ ChromaDB пересоздана с нуля")
                 except Exception as e2:
-                    # Полный сброс: удаляем директорию БД и создаём заново
-                    logger.warning(f"⚠️ Полный сброс ChromaDB ({e2})...")
-                    try:
-                        import shutil
-                        self.client = None
-                        shutil.rmtree(persist_dir, ignore_errors=True)
-                        Path(persist_dir).mkdir(parents=True, exist_ok=True)
-                        self.client = _init_chromadb(persist_dir)
-                        if self.client:
-                            self.collection = self.client.get_or_create_collection(
-                                name="kristina_memory",
-                                metadata={"hnsw:space": "cosine"},
-                            )
-                            logger.info("✅ ChromaDB пересоздана с нуля")
-                    except Exception as e3:
-                        logger.error(f"❌ Не удалось пересоздать ChromaDB: {e3}")
+                    logger.error(f"❌ Не удалось пересоздать ChromaDB: {e2}")
 
         # Один async-клиент для всех embedding-запросов (предотвращает утечку транспортов)
         self._async_client: Optional[ollama.AsyncClient] = None
