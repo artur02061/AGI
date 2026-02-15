@@ -93,6 +93,44 @@ def _init_chromadb(persist_dir: str):
 class VectorMemory:
     """Векторная память с персистентным хранилищем"""
 
+    def _try_create_collection(self):
+        """Пытается создать коллекцию несколькими способами"""
+        # Способ 1: обычный вызов
+        try:
+            coll = self.client.get_or_create_collection(name="kristina_memory")
+            logger.info("✅ Коллекция kristina_memory готова")
+            return coll
+        except Exception as e1:
+            logger.warning(f"⚠️ get_or_create_collection failed ({e1})")
+
+        # Способ 2: удалить + создать заново
+        try:
+            try:
+                self.client.delete_collection("kristina_memory")
+            except Exception:
+                pass
+            coll = self.client.create_collection(name="kristina_memory")
+            logger.info("✅ Коллекция kristina_memory создана заново")
+            return coll
+        except Exception as e2:
+            logger.warning(f"⚠️ create_collection failed ({e2})")
+
+        # Способ 3: полный сброс директории
+        try:
+            import shutil
+            self.client = None
+            shutil.rmtree(self._persist_dir, ignore_errors=True)
+            Path(self._persist_dir).mkdir(parents=True, exist_ok=True)
+            self.client = _init_chromadb(self._persist_dir)
+            if self.client:
+                coll = self.client.get_or_create_collection(name="kristina_memory")
+                logger.info("✅ ChromaDB пересоздана с нуля")
+                return coll
+        except Exception as e3:
+            logger.warning(f"⚠️ Полный сброс не помог ({e3})")
+
+        return None
+
     def __init__(self, persist_dir: str = None, shared_embedding_cache=None):
         persist_dir = persist_dir or str(config.VECTOR_DB_DIR)
         self._persist_dir = persist_dir
@@ -102,26 +140,19 @@ class VectorMemory:
         self.collection = None
 
         if self.client is not None:
+            self.collection = self._try_create_collection()
+
+        # Fallback: in-memory Client (работает всегда, но без персистентности)
+        if self.collection is None:
             try:
+                import chromadb
+                self.client = chromadb.Client()
                 self.collection = self.client.get_or_create_collection(
                     name="kristina_memory",
                 )
-                logger.info("✅ Коллекция kristina_memory готова")
-            except (KeyError, Exception) as e:
-                logger.warning(f"⚠️ Ошибка коллекции ({e}), пересоздаю...")
-                try:
-                    import shutil
-                    self.client = None
-                    shutil.rmtree(persist_dir, ignore_errors=True)
-                    Path(persist_dir).mkdir(parents=True, exist_ok=True)
-                    self.client = _init_chromadb(persist_dir)
-                    if self.client:
-                        self.collection = self.client.get_or_create_collection(
-                            name="kristina_memory",
-                        )
-                        logger.info("✅ ChromaDB пересоздана с нуля")
-                except Exception as e2:
-                    logger.error(f"❌ Не удалось пересоздать ChromaDB: {e2}")
+                logger.info("✅ ChromaDB in-memory (данные не сохраняются между перезапусками)")
+            except Exception as e:
+                logger.error(f"❌ ChromaDB полностью недоступен: {e}")
 
         # Один async-клиент для всех embedding-запросов (предотвращает утечку транспортов)
         self._async_client: Optional[ollama.AsyncClient] = None

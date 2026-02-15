@@ -645,6 +645,46 @@ class Orchestrator:
 
         return plan
 
+    async def _generate_file_args(self, user_input: str, context: str) -> Optional[Dict]:
+        """
+        Просит director через LLM сгенерировать filepath и content для create_file.
+        Используется когда regex не может извлечь аргументы из запроса.
+        """
+        import platform
+        if platform.system() == "Windows":
+            import os
+            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+        else:
+            desktop = "~/Desktop"
+
+        prompt = (
+            f'Пользователь попросил: "{user_input}"\n\n'
+            f'Рабочий стол: {desktop}\n\n'
+            'Сгенерируй СТРОГО JSON с двумя полями:\n'
+            '1. "filepath" — полный путь к файлу (если не указано расширение, используй .txt)\n'
+            '2. "content" — содержимое файла (если просят пожелания/текст — напиши его)\n\n'
+            'Пример: {{"filepath": "C:/Users/user/Desktop/wishes.txt", '
+            '"content": "Доброе утро! Пусть день будет продуктивным!"}}\n\n'
+            'Ответь ТОЛЬКО JSON, без пояснений.'
+        )
+
+        messages = [
+            {"role": "system", "content": "Ты генерируешь аргументы для инструментов. Отвечай ТОЛЬКО валидным JSON."},
+            {"role": "user", "content": prompt},
+        ]
+
+        try:
+            response = await self.director._call_model(messages, temperature=0.7, max_tokens=500)
+            # Извлекаем JSON из ответа
+            result = self.director._extract_json_from_text(response)
+            if "filepath" in result and "content" in result:
+                return result
+            logger.warning(f"⚠️ LLM вернул неполные аргументы: {list(result.keys())}")
+        except Exception as e:
+            logger.error(f"❌ Ошибка генерации аргументов: {e}")
+
+        return None
+
     async def _executor_path(
         self,
         plan: Dict,
@@ -671,6 +711,15 @@ class Orchestrator:
         if intent and intent not in self.tools:
             logger.warning(f"⚠️ Несуществующий инструмент '{intent}', fallback на NLU")
             task["tool"] = None
+
+        # create_file без аргументов: просим director сгенерировать filepath и content
+        args = task.get("args", {})
+        args_empty = not args or args == {} or args == []
+        if intent == "create_file" and args_empty:
+            generated_args = await self._generate_file_args(user_input, context)
+            if generated_args:
+                task["args"] = generated_args
+                logger.info(f"📝 Director сгенерировал аргументы: {list(generated_args.keys())}")
 
         # Выполняем инструмент
         try:
