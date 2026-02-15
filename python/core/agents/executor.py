@@ -114,14 +114,19 @@ class ExecutorAgent(BaseAgent):
             return None
     
         # === СОЗДАНИЕ ФАЙЛА ===
-        if any(word in text_lower for word in ['создай файл', 'создать файл', 'новый файл']):
+        if any(word in text_lower for word in ['создай файл', 'создать файл', 'новый файл',
+                                                'создай текстовый', 'создать текстовый']):
             match_file = re.search(r'([\wа-яёА-ЯЁ]+\.\w+)', user_input, re.I)
             match_content = re.search(r'напиши[^:]*:\s*(.+)', user_input, re.I)
-        
+
             if match_file:
                 filename = match_file.group(1)
                 content = match_content.group(1) if match_content else "Пустой файл"
                 return {"tool": "create_file", "args": [filename, content]}
+
+            # Если нет явного имени файла — запрос слишком сложный для regex,
+            # вернём None чтобы задачу обработал director через LLM
+            return None
     
         # === УДАЛЕНИЕ ФАЙЛА ===
         if any(word in text_lower for word in ['удали', 'удалить', 'удал', 'сотри']):
