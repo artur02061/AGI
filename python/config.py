@@ -45,11 +45,12 @@ class KristinaConfig(BaseSettings):
     knowledge_graph_dir: Optional[Path] = None  # v6.0
 
     # ── Модели ──
-    # Основная: gemma3-abliterated:4b — без цензуры, свободное самовыражение
-    # 4b версия: ~3GB VRAM, комфортно на 8GB GPU
+    # Основная: gemma3 12b abliterated Q4_K_M — без цензуры, свободное самовыражение
+    # Q4_K_M квантизация: ~7.3GB VRAM, влезает в 8GB GPU (качество ~95% от FP16)
     # Abliteration: удалён механизм отказов, сохранены все остальные способности
-    # Для 12b нужно 24GB+ RAM — не подходит для 8GB VRAM
-    model: str = "huihui_ai/gemma3-abliterated:4b"
+    # Источник: bartowski/mlabonne_gemma-3-12b-it-abliterated-GGUF
+    # Установка: ollama run hf.co/bartowski/mlabonne_gemma-3-12b-it-abliterated-GGUF:Q4_K_M
+    model: str = "hf.co/bartowski/mlabonne_gemma-3-12b-it-abliterated-GGUF:Q4_K_M"
 
     # Роутер: лёгкая модель для классификации запросов
     # Альтернатива: qwen3:1.7b (быстрее, но хуже русский)
@@ -190,7 +191,7 @@ class KristinaConfig(BaseSettings):
     multi_agent_enabled: bool = True
     hybrid_mode: bool = True
     max_vram_gb: float = 8.0
-    gpu_vram_reserved: float = 3.5
+    gpu_vram_reserved: float = 7.5
     enable_parallel_execution: bool = True
     max_parallel_agents: int = 3
     hot_loaded_agents: List[str] = ["director"]
@@ -273,11 +274,12 @@ class KristinaConfig(BaseSettings):
         cpu = self.ollama_hosts.cpu
         return {
             # Director: основной планировщик, GPU
-            # gemma3-abliterated:4b — без цензуры, свободный характер
-            # ~3GB VRAM, комфортно на 8GB GPU
+            # gemma3 12b abliterated Q4_K_M — без цензуры, свободный характер
+            # ~7.3GB VRAM, влезает в 8GB GPU
             "director": AgentModelConfig(
-                name="huihui_ai/gemma3-abliterated:4b", device="gpu", host=gpu,
-                vram_mb=3000, priority=0, timeout=120
+                name="hf.co/bartowski/mlabonne_gemma-3-12b-it-abliterated-GGUF:Q4_K_M",
+                device="gpu", host=gpu,
+                vram_mb=7300, priority=0, timeout=120
             ),
             # Executor: выполняет tool calls, CPU
             # gemma3:4b — быстрый, достаточный для tool execution
